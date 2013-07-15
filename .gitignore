@@ -1,0 +1,17 @@
+# composer
+vendor/
+composer.phar
+composer.lock
+
+#phpunit
+phpunit.xml
+report/
+
+# Mac
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# IntelliJ IDEA
+.idea/

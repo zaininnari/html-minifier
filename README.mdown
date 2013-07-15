@@ -1,0 +1,22 @@
+About
+=====
+
+Requirements
+------------
+
+- Any flavor of PHP 5.3 should do
+- [optional] PHPUnit 3.5+ to execute the test suite (phpunit --version)
+
+Author
+------
+
+zaininnari
+
+Original source
+
+http://www.chromium.org/blink
+
+License
+-------
+
+Licensed under the MIT License and other License - see the `LICENSE` file for details
