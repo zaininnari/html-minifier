@@ -1,5 +1,9 @@
-About
-=====
+html-minifier
+=============
+The Blink HTMLTokenizer ported to PHP and minify HTML.
+
+[![Build Status](https://travis-ci.org/zaininnari/html-minifier.png?branch=master)](https://travis-ci.org/zaininnari/html-minifier)
+[![Coverage Status](https://coveralls.io/repos/zaininnari/html-minifier/badge.png?branch=travis)](https://coveralls.io/r/zaininnari/html-minifier?branch=travis)
 
 Requirements
 ------------
