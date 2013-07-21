@@ -369,7 +369,7 @@ class HTMLTokenizer {
                     }
                     break;
 
-                case static::EndTagOpenState :
+                case static::EndTagOpenState:
                     if ($this->_isASCIIUpper($char)) {
                         $this->_Token->beginEndTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
@@ -1600,6 +1600,7 @@ class HTMLTokenizer {
     }
 
     protected function _parseError() {
+        $this->_Token->parseError();
         $this->_notImplemented();
     }
 

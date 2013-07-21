@@ -42,6 +42,7 @@ class HTMLToken {
     protected $_selfClosing = false;
     protected $_currentAttribute = 0;
     protected $_attributes = array();
+    protected $_parseError = false;
 
     protected $_html = '';
     protected $_state = array();
@@ -60,6 +61,7 @@ class HTMLToken {
             'data' => $this->_data,
             'selfClosing' => $this->_selfClosing,
             'attributes' => $this->_attributes,
+            'parseError' => $this->_parseError,
             'html' => $this->_html,
             'state' => $this->_state,
         );
@@ -122,6 +124,10 @@ class HTMLToken {
 
     public function hasSelfClosing() {
         return $this->_selfClosing;
+    }
+
+    public function parseError() {
+        $this->_parseError = true;
     }
 
     public function clear() {

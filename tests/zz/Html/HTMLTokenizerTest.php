@@ -24,6 +24,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '    ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '    ',
                 'state' => array(
                     0 => 'DataState',
@@ -45,6 +46,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'a',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'a',
                 'state' => array(
                     0 => 'DataState',
@@ -64,6 +66,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'ab',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'ab',
                 'state' => array(
                     0 => 'DataState',
@@ -96,6 +99,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html>',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<!DOCTYPE html>',
                 'state' => array(
                     0 => 'DataState',
@@ -121,6 +125,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
                 'state' => array(
                     0 => 'DataState',
@@ -156,6 +161,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'p',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<p>',
                 'state' => array(
                     0 => 'DataState',
@@ -168,6 +174,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'a',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'a',
                 'state' => array(
                     0 => 'DataState',
@@ -178,7 +185,55 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'p',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '</p>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'EndTagOpenState',
+                    3 => 'TagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = '<P>a</P>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<P>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'a',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</P>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -203,6 +258,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '&#34;',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '&#34;',
                 'state' => array(
                     0 => 'DataState',
@@ -225,6 +281,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '&amp;',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '&amp;',
                 'state' => array(
                     0 => 'DataState',
@@ -247,6 +304,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '&#34',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '&#34',
                 'state' => array(
                     0 => 'DataState',
@@ -276,6 +334,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => false,
                 'html' => '<a href="http://example.com/">',
                 'state' => array(
                     0 => 'DataState',
@@ -293,6 +352,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'link',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'link',
                 'state' => array(
                     0 => 'DataState',
@@ -303,12 +363,36 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'a',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '</a>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
                     2 => 'EndTagOpenState',
                     3 => 'TagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = '<I/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'i',
+                'selfClosing' => true,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<I/>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'SelfClosingStartTagState',
                 ),
             ),
         );
@@ -329,6 +413,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!-- comment -->',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<!-- comment -->',
                 'state' => array(
                     0 => 'DataState',
@@ -361,6 +446,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
  //]]>',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<![CDATA[
   var i = 0;
  //]]>',
@@ -391,6 +477,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
           HTML <![endif]-->',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<!--[if expression]>
           HTML <![endif]-->',
                 'state' => array(
@@ -417,6 +504,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<![if expression]>',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<![if expression]>',
                 'state' => array(
                     0 => 'DataState',
@@ -429,6 +517,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => ' HTML ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => ' HTML ',
                 'state' => array(
                     0 => 'DataState',
@@ -439,6 +528,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<![endif]>',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<![endif]>',
                 'state' => array(
                     0 => 'DataState',
@@ -462,6 +552,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '&',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '&',
                 'state' => array(
                     0 => 'DataState',
@@ -495,6 +586,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => false,
                 'html' => '<img id="test" src="img" />',
                 'state' => array(
                     0 => 'DataState',
@@ -530,6 +622,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'style',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<style>',
                 'state' => array(
                     0 => 'DataState',
@@ -542,6 +635,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'end',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'end',
                 'state' => array(
                     0 => 'RAWTEXTState',
@@ -561,6 +655,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -573,6 +668,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'end',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'end',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -592,6 +688,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'plaintext',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<PLAINTEXT>',
                 'state' => array(
                     0 => 'DataState',
@@ -604,6 +701,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'end',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'end',
                 'state' => array(
                     0 => 'PLAINTEXTState',
@@ -623,6 +721,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'div',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<DIV>',
                 'state' => array(
                     0 => 'DataState',
@@ -635,6 +734,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'end',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => 'end',
                 'state' => array(
                     0 => 'DataState',
@@ -645,6 +745,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '</',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '</',
                 'state' => array(
                     0 => 'DataState',
@@ -665,6 +766,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -677,6 +779,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!-- ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!-- ',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -700,6 +803,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -712,6 +816,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--a-',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--a-',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -736,6 +841,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -748,6 +854,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -770,6 +877,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -782,6 +890,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--<script ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--<script ',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -807,6 +916,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -819,6 +929,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--<script -',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--<script -',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -846,6 +957,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => 'script',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<script>',
                 'state' => array(
                     0 => 'DataState',
@@ -858,6 +970,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--<script --',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--<script --',
                 'state' => array(
                     0 => 'ScriptDataState',
@@ -885,6 +998,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<p ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<p ',
                 'state' => array(
                     0 => 'DataState',
@@ -912,6 +1026,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p i',
                 'state' => array(
                     0 => 'DataState',
@@ -940,6 +1055,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p id ',
                 'state' => array(
                     0 => 'DataState',
@@ -969,6 +1085,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p id=',
                 'state' => array(
                     0 => 'DataState',
@@ -998,6 +1115,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p id="',
                 'state' => array(
                     0 => 'DataState',
@@ -1028,6 +1146,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p id=\'',
                 'state' => array(
                     0 => 'DataState',
@@ -1058,6 +1177,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<p id="id"',
                 'state' => array(
                     0 => 'DataState',
@@ -1089,6 +1209,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                         'quoted' => false,
                     ),
                 ),
+                'parseError' => true,
                 'html' => '<img id="id"/',
                 'state' => array(
                     0 => 'DataState',
@@ -1115,6 +1236,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!',
                 'state' => array(
                     0 => 'DataState',
@@ -1135,6 +1257,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!-',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<!-',
                 'state' => array(
                     0 => 'DataState',
@@ -1156,6 +1279,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--',
                 'state' => array(
                     0 => 'DataState',
@@ -1177,6 +1301,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!-->',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!-->',
                 'state' => array(
                     0 => 'DataState',
@@ -1199,6 +1324,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!---',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!---',
                 'state' => array(
                     0 => 'DataState',
@@ -1221,6 +1347,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!--->',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!--->',
                 'state' => array(
                     0 => 'DataState',
@@ -1244,6 +1371,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!----',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!----',
                 'state' => array(
                     0 => 'DataState',
@@ -1267,6 +1395,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!----!',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!----!',
                 'state' => array(
                     0 => 'DataState',
@@ -1291,6 +1420,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE',
                 'state' => array(
                     0 => 'DataState',
@@ -1312,6 +1442,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE ',
                 'state' => array(
                     0 => 'DataState',
@@ -1334,6 +1465,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE P',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE P',
                 'state' => array(
                     0 => 'DataState',
@@ -1357,6 +1489,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE P ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE P ',
                 'state' => array(
                     0 => 'DataState',
@@ -1381,6 +1514,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC',
                 'state' => array(
                     0 => 'DataState',
@@ -1406,6 +1540,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC ',
                 'state' => array(
                     0 => 'DataState',
@@ -1432,6 +1567,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC "',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC "',
                 'state' => array(
                     0 => 'DataState',
@@ -1459,6 +1595,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC \'',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC \'',
                 'state' => array(
                     0 => 'DataState',
@@ -1486,6 +1623,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC ""',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC ""',
                 'state' => array(
                     0 => 'DataState',
@@ -1514,6 +1652,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE html PUBLIC "" ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE html PUBLIC "" ',
                 'state' => array(
                     0 => 'DataState',
@@ -1543,6 +1682,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM',
                 'state' => array(
                     0 => 'DataState',
@@ -1568,6 +1708,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM ',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM ',
                 'state' => array(
                     0 => 'DataState',
@@ -1594,6 +1735,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM "',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM "',
                 'state' => array(
                     0 => 'DataState',
@@ -1621,6 +1763,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM \'',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM \'',
                 'state' => array(
                     0 => 'DataState',
@@ -1648,6 +1791,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM ""',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM ""',
                 'state' => array(
                     0 => 'DataState',
@@ -1676,6 +1820,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo SYSTEM "http://www.4dd.co.jp/DTD/memo.dtd"',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo SYSTEM "http://www.4dd.co.jp/DTD/memo.dtd"',
                 'state' => array(
                     0 => 'DataState',
@@ -1704,6 +1849,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<!DOCTYPE memo D"',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => true,
                 'html' => '<!DOCTYPE memo D"',
                 'state' => array(
                     0 => 'DataState',
@@ -1730,11 +1876,1078 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'data' => '<![CDATA[',
                 'selfClosing' => false,
                 'attributes' => array(),
+                'parseError' => false,
                 'html' => '<![CDATA[',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<a';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'EndOfFile',
+                'data' => '<a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<a',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<!-- -';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<!-- -',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!-- -',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'CommentStartState',
+                    4 => 'CommentState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testParseError() {
+        // TagOpenState
+        $html = $source = '<<?';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => '<',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Comment',
+                'data' => '<?',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<?',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'ContinueBogusCommentState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // TagOpenState
+        $html = $source = '<<?';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => '<',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Comment',
+                'data' => '<?',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<?',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'ContinueBogusCommentState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // EndTagOpenState
+        $html = $source = '</>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'EndOfFile',
+                'data' => '</>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '</>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'EndTagOpenState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // EndTagOpenState
+        $html = $source = '<//';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<//',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<//',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'EndTagOpenState',
+                    3 => 'ContinueBogusCommentState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterAttributeNameState
+        $html = $source = '<IMG SRC "="img.png">';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'img',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'src',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                    1 => array(
+                        'name' => '"',
+                        'value' => 'img.png',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => '<IMG SRC "="img.png">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    5 => 'BeforeAttributeNameState',
+                    6 => 'AttributeNameState',
+                    9 => 'AfterAttributeNameState',
+                    10 => 'AttributeNameState',
+                    11 => 'BeforeAttributeValueState',
+                    12 => 'AttributeValueDoubleQuotedState',
+                    20 => 'AfterAttributeValueQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeAttributeValueState
+        $html = $source = '<IMG SRC=>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'img',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'src',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => '<IMG SRC=>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    5 => 'BeforeAttributeNameState',
+                    6 => 'AttributeNameState',
+                    9 => 'BeforeAttributeValueState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeAttributeValueState
+        $html = $source = '<IMG SRC=<"';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'EndOfFile',
+                'data' => '<IMG SRC=<"',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'src',
+                        'value' => '<"',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => '<IMG SRC=<"',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    5 => 'BeforeAttributeNameState',
+                    6 => 'AttributeNameState',
+                    9 => 'BeforeAttributeValueState',
+                    10 => 'AttributeValueUnquotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterAttributeValueQuotedState
+        $html = $source = '<IMG SRC="""';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'EndOfFile',
+                'data' => '<IMG SRC="""',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'src',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                    1 => array(
+                        'name' => '"',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => '<IMG SRC="""',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    5 => 'BeforeAttributeNameState',
+                    6 => 'AttributeNameState',
+                    9 => 'BeforeAttributeValueState',
+                    10 => 'AttributeValueDoubleQuotedState',
+                    11 => 'AfterAttributeValueQuotedState',
+                    12 => 'BeforeAttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // SelfClosingStartTagState
+        $html = $source = '<IMG SRC=""/ ';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'EndOfFile',
+                'data' => '<IMG SRC=""/ ',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'src',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => '<IMG SRC=""/ ',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    5 => 'BeforeAttributeNameState',
+                    6 => 'AttributeNameState',
+                    9 => 'BeforeAttributeValueState',
+                    10 => 'AttributeValueDoubleQuotedState',
+                    11 => 'AfterAttributeValueQuotedState',
+                    12 => 'SelfClosingStartTagState',
+                    13 => 'BeforeAttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // CommentEndState
+        $html = $source = '<!-- ---';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<!-- ---',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!-- ---',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'CommentStartState',
+                    4 => 'CommentState',
+                    5 => 'CommentEndDashState',
+                    6 => 'CommentEndState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // CommentEndState
+        $html = $source = '<!-- --<';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<!-- --<',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!-- --<',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'CommentStartState',
+                    4 => 'CommentState',
+                    5 => 'CommentEndDashState',
+                    6 => 'CommentEndState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // DOCTYPEState
+        $html = $source = '<!DOCTYPE_';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE_',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE_',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPENameState
+        $html = $source = '<!DOCTYPE >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE >',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE >',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPENameState
+        $html = $source = '<!DOCTYPE HTML PUBLIC"';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC"',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC"',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPENameState
+        $html = $source = '<!DOCTYPE HTML PUBLIC\'';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC\'',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC\'',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPENameState
+        $html = $source = '<!DOCTYPE HTML PUBLIC>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPENameState
+        $html = $source = '<!DOCTYPE HTML PUBLIC_';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC_',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC_',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPEPublicIdentifierState
+        $html = $source = '<!DOCTYPE HTML PUBLIC >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC >',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC >',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPEPublicIdentifierState
+        $html = $source = '<!DOCTYPE HTML PUBLIC _';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC _',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC _',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // DOCTYPEPublicIdentifierDoubleQuotedState
+        $html = $source = '<!DOCTYPE HTML PUBLIC ">';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC ">',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC ">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // DOCTYPEPublicIdentifierSingleQuotedState
+        $html = $source = '<!DOCTYPE HTML PUBLIC \'>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE HTML PUBLIC \'>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE HTML PUBLIC \'>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPEPublicIdentifierState
+        $html = $source = '<!DOCTYPE html PUBLIC """';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html PUBLIC """',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html PUBLIC """',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    13 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPEPublicIdentifierState
+        $html = $source = '<!DOCTYPE html PUBLIC ""\'';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html PUBLIC ""\'',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html PUBLIC ""\'',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    13 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPEPublicIdentifierState
+        $html = $source = '<!DOCTYPE html PUBLIC ""-';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html PUBLIC ""-',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html PUBLIC ""-',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    13 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BetweenDOCTYPEPublicAndSystemIdentifiersState
+        $html = $source = '<!DOCTYPE html PUBLIC "" -';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html PUBLIC "" -',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html PUBLIC "" -',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPEPublicKeywordState',
+                    11 => 'BeforeDOCTYPEPublicIdentifierState',
+                    12 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    13 => 'AfterDOCTYPEPublicIdentifierState',
+                    14 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPESystemKeywordState
+        $html = $source = '<!DOCTYPE html SYSTEM"';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM"',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM"',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPESystemKeywordState
+        $html = $source = '<!DOCTYPE html SYSTEM\'';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM\'',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM\'',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPESystemKeywordState
+        $html = $source = '<!DOCTYPE html SYSTEM>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPESystemKeywordState
+        $html = $source = '<!DOCTYPE html SYSTEM-';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM-',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM-',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPESystemIdentifierState
+        $html = $source = '<!DOCTYPE html SYSTEM >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM >',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM >',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                    11 => 'BeforeDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // BeforeDOCTYPESystemIdentifierState
+        $html = $source = '<!DOCTYPE html SYSTEM -';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM -',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM -',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                    11 => 'BeforeDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // DOCTYPESystemIdentifierDoubleQuotedState
+        $html = $source = '<!DOCTYPE html SYSTEM ">';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM ">',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM ">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                    11 => 'BeforeDOCTYPESystemIdentifierState',
+                    12 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // DOCTYPESystemIdentifierDoubleQuotedState
+        $html = $source = '<!DOCTYPE html SYSTEM \'>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM \'>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM \'>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                    11 => 'BeforeDOCTYPESystemIdentifierState',
+                    12 => 'DOCTYPESystemIdentifierSingleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // AfterDOCTYPESystemIdentifierState
+        $html = $source = '<!DOCTYPE html SYSTEM ""-';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html SYSTEM ""-',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DOCTYPE html SYSTEM ""-',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    3 => 'DOCTYPEState',
+                    4 => 'BeforeDOCTYPENameState',
+                    5 => 'DOCTYPENameState',
+                    9 => 'AfterDOCTYPENameState',
+                    10 => 'AfterDOCTYPESystemKeywordState',
+                    11 => 'BeforeDOCTYPESystemIdentifierState',
+                    12 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    13 => 'AfterDOCTYPESystemIdentifierState',
                 ),
             ),
         );
