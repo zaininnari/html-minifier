@@ -278,6 +278,7 @@ javascript
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
     }
+
     public function testTagInvalid() {
         $source = '<DIV>    end
     </';
@@ -294,6 +295,18 @@ javascript
         $source = '<title>&#34;';
         $expect = '<title>&#34;';
         $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testOptimizeStartTagAttributes() {
+        $source = '<p title="title1" title="title2" class="class1" class="class2">';
+        $expect = '<p title="title1" class="class1">';
+        $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p title="title1" title="title2" class="class1" class="class2">';
+        $expect = '<p title="title1" title="title2" class="class1" class="class2">';
+        $actual = HTMLMinify::minify($source, array('deleteDuplicateAttribute' => false));
         $this->assertEquals($expect, $actual);
     }
 

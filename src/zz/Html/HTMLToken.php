@@ -116,6 +116,10 @@ class HTMLToken {
         return $this->_attributes;
     }
 
+    public function setAttributes($attributes) {
+        $this->_attributes = $attributes;
+    }
+
     public function hasSelfClosing() {
         return $this->_selfClosing;
     }

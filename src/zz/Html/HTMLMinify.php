@@ -48,6 +48,7 @@ class HTMLMinify {
             // '<br />' => '<br/>'
             'startTagBeforeSlash' => static::REMOVE_WHITE_SPACE,
             'comment' => true,
+            'deleteDuplicateAttribute' => true,
         );
         return $options + $_options;
     }
@@ -129,6 +130,10 @@ class HTMLMinify {
     protected function beforeFilter() {
         $this->removeWhitespaceFromComment();
         $this->removeWhitespaceFromCharacter();
+
+        if ($this->options['deleteDuplicateAttribute']) {
+            $this->optimizeStartTagAttributes();
+        }
     }
 
     protected function removeWhitespaceFromComment() {
@@ -349,6 +354,32 @@ class HTMLMinify {
     // p,param,
     // table,tbody,thead,td,th,tr,tfoot,title
     // ul
+
+
+    protected function optimizeStartTagAttributes() {
+        $tokens = $this->tokens;
+        for ($i = 0, $len = count($tokens); $i < $len; $i++) {
+            $token = $tokens[$i];
+            if ($token->getType() !== HTMLToken::StartTag) {
+                continue;
+            }
+
+            $attributes_old = $token->getAttributes();
+            $attributes_new = array();
+            $attributes_name = array();
+
+            foreach ($attributes_old as $attribute) {
+                if (!isset($attributes_name[$attribute['name']])) {
+                    $attributes_name[$attribute['name']] = true;
+                    $attributes_new[] = $attribute;
+                }
+            }
+            if ($attributes_old !== $attributes_new) {
+                $token->setAttributes($attributes_new);
+            }
+        }
+        $this->tokens = $tokens;
+    }
 
     /**
      * @param HTMLToken $token
