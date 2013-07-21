@@ -246,6 +246,12 @@ This code displays on non-IE browsers and on IE 7 or higher.
         $expect = '<!--[if !condition]><![IGNORE[--> HTML <!--<![endif]-->';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
+
+        $source = '<script>var i = 0;</script><!----><script>var i = 0;</script>';
+        $expect = '<script>var i = 0;</script><script>var i = 0;</script>';
+
+        $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
     }
 
     public function testTagTitle() {
@@ -308,6 +314,16 @@ javascript
         $expect = '<p title="title1" title="title2" class="class1" class="class2">';
         $actual = HTMLMinify::minify($source, array('deleteDuplicateAttribute' => false));
         $this->assertEquals($expect, $actual);
+    }
+
+    public function testGetTokens() {
+        $source = '<p title="title1" class="class1">';
+        $expect = 1;
+        $instance = new HTMLMinify($source);
+        $instance->process();
+        $actual = $instance->getTokens();
+        $this->assertEquals($expect, count($actual));
+        $this->assertTrue($actual[0] instanceof HTMLToken);
     }
 
 }

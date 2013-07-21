@@ -139,65 +139,27 @@ class HTMLMinify {
     protected function removeWhitespaceFromComment() {
         $tokens = $this->tokens;
 
-        $skipTag = null;
-        $len = count($tokens);
-
-        // only comment
-        if ($len === 1) {
-            $token = $tokens[0];
-            if ($token->getType() === HTMLToken::Comment && !$this->_isConditionalComment($token)) {
-                unset($this->tokens[0]);
-                return;
-            };
-        }
-
-        for ($i = 0; $i < $len; $i++) {
+        for ($i = 0, $len = count($tokens); $i < $len; $i++) {
             $token = $tokens[$i];
-            if ($token->getType() === HTMLToken::StartTag) {
-                if ($token->getTagName() === HTMLNames::scriptTag) {
-                    $skipTag = HTMLNames::scriptTag;
-                } else if ($token->getTagName() === HTMLNames::styleTag) {
-                    $skipTag = HTMLNames::styleTag;
+            $type = $token->getType();
+            if ($type === HTMLToken::StartTag) {
+                $tagName = $token->getTagName();
+                if ($tagName === HTMLNames::scriptTag || $tagName === HTMLNames::styleTag) {
+                    $i++;
+                    continue;
                 }
-            } else if ($token->getType() === HTMLToken::EndTag || $token->getType() === HTMLToken::EndOfFile) {
-                $skipTag = null;
             } elseif ($this->_isConditionalComment($token)) {
                 continue;
             }
 
-            if ($token->getType() !== HTMLToken::Comment) {
+            if ($type !== HTMLToken::Comment) {
                 continue;
             }
 
-            if ($skipTag && $token->getType() === HTMLToken::Comment) {
-                continue;
-            }
-
-            if ($i === 0) {
-                if (!$this->_isConditionalComment($token)) {
-                    unset($tokens[$i]);
-                    $tokens = array_merge($tokens, array());
-                    $len = count($tokens);
-                }
-                continue;
-            }
-
-            $token_before = $tokens[$i - 1];
-            if ($token_before->getType() === HTMLToken::StartTag) {
-                if ($token_before->getTagName() !== HTMLNames::scriptTag) {
-                    unset($tokens[$i]);
-                    $tokens = array_merge($tokens, array());
-                    $len = count($tokens);
-                    $i--;
-                } else {
-                    $skipTag = HTMLNames::scriptTag;
-                }
-            } else {
-                unset($tokens[$i]);
-                $tokens = array_merge($tokens, array());
-                $len = count($tokens);
-                $i--;
-            }
+            unset($tokens[$i]);
+            $tokens = array_merge($tokens, array());
+            $len = count($tokens);
+            $i--;
         }
 
         $tokens = array_merge($tokens, array());
@@ -239,12 +201,6 @@ class HTMLMinify {
                 continue;
             }
 
-            if (isset($tokens[$i + 1])) {
-                $token_after = $tokens[$i + 1];
-            } else {
-                $token_after = new HTMLToken();
-                $token_after->makeEndOfFile();
-            }
             $characters = $token->getData();
             if ($i === 0) {
                 $token_before = new HTMLToken();
@@ -285,37 +241,6 @@ class HTMLMinify {
      * @return string
      */
     protected function _removeWhitespaceFromCharacter($characters) {
-        $compactCharacters = '';
-        $hasWhiteSpace = false;
-
-        for ($i = 0, $len = mb_strlen($characters, static::ENCODING); $i < $len; $i++) {
-            $char = mb_substr($characters, $i, 1, static::ENCODING);
-            if ($char === "\x0A") {
-                // remove before whitespace char
-                if ($hasWhiteSpace) {
-                    $compactCharacters = mb_substr($compactCharacters, 0, -1, static::ENCODING);
-                }
-                $compactCharacters .= $char;
-                $hasWhiteSpace = true;
-            } else if ($char === ' ' || $char === "\x09" || $char === "\x0C") {
-                if (!$hasWhiteSpace) {
-                    $compactCharacters .= ' ';
-                    $hasWhiteSpace = true;
-                }
-            } else {
-                $hasWhiteSpace = false;
-                $compactCharacters .= $char;
-            }
-        }
-
-        return $compactCharacters;
-    }
-
-    /**
-     * @param string $characters
-     * @return string
-     */
-    protected function _removeWhitespaceLastFromCharacter($characters) {
         $compactCharacters = '';
         $hasWhiteSpace = false;
 
