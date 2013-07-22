@@ -52,38 +52,16 @@ class SegmentedString {
         return $this->seek(1, static::current);
     }
 
-    function readChar($i, $lookAhead = false) {
-        if ($this->eos() && $i > 0) {
-            return false;
-        }
-        if ($lookAhead) {
-
-        } else {
-            $this->i += $i;
-        }
-
-        return mb_substr($this->str, $this->i - $i, $i, static::ENCODING);
-    }
-
     /**
      * @param int $i
      * @return string
      */
-    function read($i, $lookAhead = false) {
+    function read($i) {
         if ($this->eos() && $i > 0) {
             return false;
         }
-        if ($lookAhead) {
-
-        } else {
-            $this->i += $i;
-        }
-
+        $this->i += $i;
         return mb_substr($this->str, $this->i - $i, $i, static::ENCODING);
-    }
-
-    function readElement() {
-        return $this->read(1);
     }
 
     function substr($startPos, $endPos) {
@@ -132,6 +110,10 @@ class SegmentedString {
 
     function get() {
         return $this->str;
+    }
+
+    function len() {
+        return $this->len;
     }
 
     function token($str, $caseSensitive = true) {
