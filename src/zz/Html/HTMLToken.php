@@ -144,9 +144,6 @@ class HTMLToken {
     }
 
     public function appendToCharacter($character) {
-        if (is_array($character)) {
-            $character = join('', $character);
-        }
         $this->_data .= $character;
     }
 
