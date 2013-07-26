@@ -35,7 +35,7 @@ class HTMLMinify {
         $this->options = $this->options($options);
 
         $SegmentedString = new SegmentedString($html);
-        $HTMLTokenizer = new HTMLTokenizer($SegmentedString);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, $options);
         $this->tokens = $HTMLTokenizer->tokenizer();
     }
 
@@ -173,12 +173,6 @@ class HTMLMinify {
             $token_before = $tokens[$i - 1];
             if ($token_before->getType() !== HTMLToken::Character) {
                 continue;
-            }
-            if ($i > 1) {
-                $tag = $tokens[$i - 2]->getTagName();
-                if ($tag === HTMLNames::scriptTag || $tag === HTMLNames::styleTag) {
-                    continue;
-                }
             }
             $tokens[$i]->setData($tokens[$i - 1]->getData() . $tokens[$i]->getData());
             unset($tokens[$i - 1]);

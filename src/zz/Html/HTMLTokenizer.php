@@ -159,9 +159,56 @@ class HTMLTokenizer {
             $this->nextToken($this->_SegmentedString);
             $this->_state = static::DataState;
             $endPos = $this->_SegmentedString->tell();
-            if ($endPos - $startPos > 0) {
-                $this->_compactBuffer($startPos, $endPos);
 
+            if ($endPos - $startPos > 0) {
+                if (count($this->_buffer) > 0) {
+                    $startState = $this->_buffer[0];
+                    $endState = $this->_buffer[count($this->_buffer) - 1];
+                    if (($startState === static::RAWTEXTState && $endState === static::RAWTEXTEndTagNameState) || ($startState === static::RCDATAState && $endState === static::RCDATAEndTagNameState) || ($startState === static::ScriptDataState && ($endState === static::ScriptDataEndTagNameState || $endState === static::ScriptDataEscapedEndTagNameState))) {
+                        switch ($startState) {
+                            case  static::RAWTEXTState:
+                                $states = array(
+                                    static::RAWTEXTLessThanSignState,
+                                    static::RAWTEXTEndTagOpenState,
+                                    static::RAWTEXTEndTagNameState,
+                                );
+                                break;
+                            case  static::RCDATAState:
+                                $states = array(
+                                    static::RCDATALessThanSignState,
+                                    static::RCDATAEndTagOpenState,
+                                    static::RCDATAEndTagNameState,
+                                );
+                                break;
+                            case  static::ScriptDataState:
+                                if ($endState === static::ScriptDataEndTagNameState) {
+                                    $states = array(
+                                        static::ScriptDataLessThanSignState,
+                                        static::ScriptDataEndTagOpenState,
+                                        static::ScriptDataEndTagNameState,
+                                    );
+                                } else {
+                                    $states = array(
+                                        static::ScriptDataLessThanSignState,
+                                        static::ScriptDataEscapedEndTagOpenState,
+                                        static::ScriptDataEscapedEndTagNameState,
+                                    );
+                                }
+                                break;
+                        }
+
+                        if ($this->_option['debug']) {
+                            $this->_Token->setHtmlOrigin($this->_Token->getData());
+                            $this->_Token->setState(array($startState));
+                        }
+                        $this->_tokens[] = $this->_Token;
+                        $startPos += mb_strlen($this->_Token->getData(), SegmentedString::ENCODING);
+                        $this->_buffer = $states;
+                        $this->_Token = new HTMLToken();
+                        $this->_Token->beginEndTag($this->_bufferedEndTagName);
+                    }
+                }
+                $this->_compactBuffer($startPos, $endPos);
                 $token = $this->_Token;
                 $this->_tokens[] = $token;
 
@@ -176,6 +223,8 @@ class HTMLTokenizer {
             }
 
             $this->_buffer = array();
+            $this->_bufferedEndTagName = '';
+            $this->_temporaryBuffer = '';
             $this->_Token = new HTMLToken();
             if ($this->_SegmentedString->eos()) {
                 break;
@@ -250,19 +299,6 @@ class HTMLTokenizer {
     // http://www.whatwg.org/specs/web-apps/current-work/#tokenization
     public function nextToken(SegmentedString $source) {
         while (true) {
-            // if (!$this->_isEndTagBufferingState($this->_state)) {
-            //     // FIXME: This should call flushBufferedEndTag().
-            //     // We started an end tag during our last iteration.
-            //     $this->_Token->beginEndTag($this->_bufferedEndTagName);
-            //     $this->_bufferedEndTagName = '';
-            //     $this->_appropriateEndTagName = '';
-            //     $this->_temporaryBuffer = '';
-            //     if ($this->_state === HTMLTokenizer::DataState) {
-            //         // We're back in the data state, so we must be done with the tag.
-            //         return true;
-            //     }
-            // }
-
             $char = $this->_nextInputCharacter($this->_state);
             if ($char !== null) {
                 $this->_buffer[] = $this->_state;
@@ -440,12 +476,10 @@ class HTMLTokenizer {
                     if ($this->_isASCIIUpper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
-                        // HTML_ADVANCE_TO(RCDATAEndTagNameState);
-                        $this->_HTML_ADVANCE_TO(static::RCDATAState);
+                        $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
                     } else if ($this->_isASCIILower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
-                        // HTML_ADVANCE_TO(RCDATAEndTagNameState);
                         $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
                     } else {
                         if ($this->_isTokenizerWhitespace($char)) {
@@ -457,7 +491,6 @@ class HTMLTokenizer {
                             if ($this->_isAppropriateEndTag()) {
                                 $this->_temporaryBuffer .= $char;
                                 $this->_FLUSH_AND_ADVANCE_TO(static::SelfClosingStartTagState);
-
                             }
                         } else if ($char === '>') {
                             if ($this->_isAppropriateEndTag()) {
@@ -467,7 +500,7 @@ class HTMLTokenizer {
                         }
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter('/');
-                        // $this->_Token->appendToCharacter(m_temporaryBuffer);
+                        $this->_Token->appendToCharacter($this->_temporaryBuffer);
                         $this->_bufferedEndTagName = '';
                         $this->_temporaryBuffer = '';
                         $this->_bufferPop();
@@ -530,7 +563,7 @@ class HTMLTokenizer {
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter('/');
                         $this->_Token->appendToCharacter($this->_temporaryBuffer);
-                        $this->_bufferedEndTagName = array();
+                        $this->_bufferedEndTagName = '';
                         $this->_temporaryBuffer = '';
                         $this->_HTML_RECONSUME_IN(static::RAWTEXTState);
                     }
@@ -596,7 +629,7 @@ class HTMLTokenizer {
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter('/');
                         $this->_Token->appendToCharacter($this->_temporaryBuffer);
-                        $this->_bufferedEndTagName = array();
+                        $this->_bufferedEndTagName = '';
                         $this->_temporaryBuffer = '';
                         $this->_HTML_RECONSUME_IN(static::ScriptDataState);
                     }
@@ -734,13 +767,13 @@ class HTMLTokenizer {
                             if ($this->_isAppropriateEndTag()) {
                                 $this->_temporaryBuffer .= $char;
                                 $this->_temporaryBuffer .= $char;
-                                return $this->_flushEmitAndResumeIn($$source, HTMLTokenizer::DataState);
+                                return $this->_flushEmitAndResumeIn($source, HTMLTokenizer::DataState);
                             }
                         }
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter('/');
                         $this->_Token->appendToCharacter($this->_temporaryBuffer);
-                        $this->_bufferedEndTagName = array();
+                        $this->_bufferedEndTagName = '';
                         $this->_temporaryBuffer = '';
                         $this->_HTML_RECONSUME_IN(static::ScriptDataEscapedState);
                     }
@@ -1783,12 +1816,7 @@ class HTMLTokenizer {
     }
 
     protected function _isAppropriateEndTag() {
-        if ($this->_bufferedEndTagName === $this->_appropriateEndTagName) {
-            // FIXME
-            $this->_bufferedEndTagName = '';
-            return true;
-        }
-        return false;
+        return $this->_bufferedEndTagName === $this->_appropriateEndTagName;
     }
 
     protected function _emitAndReconsumeIn(SegmentedString $source, $state) {

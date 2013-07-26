@@ -2954,4 +2954,195 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
     }
 
+    public function testRAWTEXTState() {
+        $html = $source = '<style>  /**/  </style>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<style>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</style>',
+                'state' => array(
+                    0 => 'RAWTEXTLessThanSignState',
+                    1 => 'RAWTEXTEndTagOpenState',
+                    2 => 'RAWTEXTEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testScriptDataState() {
+        $html = $source = '<script>  /**/  </script>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</script>',
+                'state' => array(
+                    0 => 'ScriptDataLessThanSignState',
+                    1 => 'ScriptDataEndTagOpenState',
+                    2 => 'ScriptDataEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testRCDATAState() {
+        $html = $source = '<title>  /**/  </title>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<title>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'RCDATAState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</title>',
+                'state' => array(
+                    0 => 'RCDATALessThanSignState',
+                    1 => 'RCDATAEndTagOpenState',
+                    2 => 'RCDATAEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testNestDataState() {
+        $html = $source = '<textarea><script> var Hello = \'world\';</script></textarea>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'textarea',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<textarea>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '<script> var Hello = \'world\';</script>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script> var Hello = \'world\';</script>',
+                'state' => array(
+                    0 => 'RCDATAState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'textarea',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</textarea>',
+                'state' => array(
+                    0 => 'RCDATALessThanSignState',
+                    1 => 'RCDATAEndTagOpenState',
+                    2 => 'RCDATAEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
 }
