@@ -37,6 +37,9 @@ class HTMLToken {
     const Character = 'Character';
     const EndOfFile = 'EndOfFile';
 
+    const DoubleQuoted = '"';
+    const SingleQuoted = '\'';
+
     protected $_type;
     protected $_data = '';
     protected $_selfClosing = false;
@@ -159,6 +162,13 @@ class HTMLToken {
         $this->_data .= $character;
     }
 
+    public function setDoubleQuoted(){
+        $this->_currentAttribute['quoted'] = static::DoubleQuoted;
+    }
+
+    public function setSingleQuoted(){
+        $this->_currentAttribute['quoted'] = static::SingleQuoted;
+    }
 
     /* Start/End Tag Tokens */
 

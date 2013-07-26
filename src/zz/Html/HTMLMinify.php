@@ -120,9 +120,26 @@ class HTMLMinify {
      */
     protected function _buildAttributes(HTMLToken $token) {
         $attr = array();
-        $format = '%s="%s"';
+        $format = '%s=%s%s%s';
         foreach ($token->getAttributes() as $attribute) {
-            $attr[] = sprintf($format, $attribute['name'], $attribute['value']);
+            $name = $attribute['name'];
+            $value = $attribute['value'];
+            switch ($attribute['quoted']) {
+                case HTMLToken::DoubleQuoted:
+                    $quoted = '"';
+                    break;
+                case HTMLToken::SingleQuoted:
+                    $quoted = '\'';
+                    break;
+                default:
+                    $quoted = '';
+                    break;
+            }
+            if ($quoted === '' && $value === '') {
+                $attr[] = $name;
+            } else {
+                $attr[] = sprintf($format, $name, $quoted, $value, $quoted);
+            }
         }
         return join(' ', $attr);
     }

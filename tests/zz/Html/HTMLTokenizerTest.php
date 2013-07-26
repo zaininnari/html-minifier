@@ -331,7 +331,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'href',
                         'value' => 'http://example.com/',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => false,
@@ -578,12 +578,12 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'id',
                         'value' => 'test',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                     1 => array(
                         'name' => 'src',
                         'value' => 'img',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => false,
@@ -1174,7 +1174,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'id',
                         'value' => 'id',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => true,
@@ -1206,7 +1206,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'id',
                         'value' => 'id',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => true,
@@ -2071,7 +2071,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     1 => array(
                         'name' => '"',
                         'value' => 'img.png',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => true,
@@ -2172,7 +2172,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'src',
                         'value' => '',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                     1 => array(
                         'name' => '"',
@@ -2212,7 +2212,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => array(
                         'name' => 'src',
                         'value' => '',
-                        'quoted' => false,
+                        'quoted' => '"',
                     ),
                 ),
                 'parseError' => true,

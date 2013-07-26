@@ -986,6 +986,7 @@ class HTMLTokenizer {
 
                 case static::AttributeValueDoubleQuotedState:
                     if ($char === '"') {
+                        $this->_Token->setDoubleQuoted();
                         $this->_Token->endAttributeValue($source->numberOfCharactersConsumed());
                         $this->_HTML_ADVANCE_TO(static::AfterAttributeValueQuotedState);
                     } else if ($char === '&') {
@@ -1003,6 +1004,7 @@ class HTMLTokenizer {
 
                 case static::AttributeValueSingleQuotedState:
                     if ($char === '\'') {
+                        $this->_Token->setSingleQuoted();
                         $this->_Token->endAttributeValue($source->numberOfCharactersConsumed());
                         $this->_HTML_ADVANCE_TO(static::AfterAttributeValueQuotedState);
                     } else if ($char === '&') {

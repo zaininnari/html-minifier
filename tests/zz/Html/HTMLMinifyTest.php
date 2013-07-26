@@ -326,4 +326,10 @@ javascript
         $this->assertTrue($actual[0] instanceof HTMLToken);
     }
 
+    public function testAttributeQuoted() {
+        $source = '<img id=id class=\'class\' src="img.png" title />';
+        $expect = '<img id=id class=\'class\' src="img.png" title/>';
+        $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
+    }
 }

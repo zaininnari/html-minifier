@@ -17,7 +17,7 @@ class HTMLTokenTest extends \PHPUnit_Framework_TestCase {
             array(
                 'name' => 'src',
                 'value' => 'img.png',
-                'quoted' => false
+                'quoted' => '"'
             )
         ), $token->getAttributes());
         $this->assertEquals(HTMLNames::imgTag, $token->getData());
@@ -73,4 +73,28 @@ class HTMLTokenTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(null, $Token->forceQuirks());
     }
 
+    public function testAttributeQuoted() {
+        $html = '<img id=id class=\'class\' src="img.png" />';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $tokens = $HTMLTokenizer->tokenizer();
+        $token = $tokens[0];
+        $this->assertEquals(array(
+            0 => array(
+                'name' => 'id',
+                'value' => 'id',
+                'quoted' => false,
+            ),
+            1 => array(
+                'name' => 'class',
+                'value' => 'class',
+                'quoted' => '\'',
+            ),
+            2 => array(
+                'name' => 'src',
+                'value' => 'img.png',
+                'quoted' => '"',
+            ),
+        ), $token->getAttributes());
+    }
 }
