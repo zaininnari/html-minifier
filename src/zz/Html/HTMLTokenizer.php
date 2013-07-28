@@ -1030,15 +1030,20 @@ class HTMLTokenizer {
                 case static::CharacterReferenceInAttributeValueState:
                     $notEnoughCharacters = false;
                     $decodedEntity = array();
+                    $position = $source->tell();
+                    $this->addState($position);
                     $success = $this->_consumeHTMLEntity($source, $decodedEntity, $notEnoughCharacters, $this->_additionalAllowedCharacter);
-                    if ($notEnoughCharacters) {
-                        $this->addState();
+                    if ($success === 'notEnoughCharacters') {
+                        $this->_Token->appendToAttributeValue('&');
                         return $this->_haveBufferedCharacterToken();
                     }
                     if (!$success) {
-                        $this->_Token->appendToAttributeValue('&');
+                         $this->_Token->appendToAttributeValue('&');
                     } else {
-                        for ($i = 0; $i < count($decodedEntity); ++$i) $this->_Token->appendToAttributeValue($decodedEntity[$i]);
+                        // for ($i = 0; $i < count($decodedEntity); ++$i)
+                        //     $this->_Token->appendToAttributeValue($decodedEntity[$i]);
+                        $value = '&' . $source->substr($position, $source->tell() - $position);
+                        $this->_Token->appendToAttributeValue($value);
                     }
                     // We're supposed to switch back to the attribute value state that
                     // we were in when we were switched into this state. Rather than
@@ -1660,12 +1665,15 @@ class HTMLTokenizer {
     protected function _consumeHTMLEntity(SegmentedString $source, $decodedEntity, $notEnoughCharacters, $additionalAllowedCharacter = null) {
         $entityState = 'Initial';
         $result = 0;
+        $position = $source->tell();
         $consumedCharacters = array();
         while (!$source->eos()) {
             $cc = $source->getCurrentChar();
             switch ($entityState) {
                 case 'Initial':
-                    if ($cc === "\x09" || $cc === "\x0A" || $cc === "\x0C" || $cc === ' ' || $cc === '<' || $cc === '&') return false;
+                    if ($cc === "\x09" || $cc === "\x0A" || $cc === "\x0C" || $cc === ' ' || $cc === '<' || $cc === '&') {
+                        return false;
+                    }
                     if ($additionalAllowedCharacter !== null && $cc === $additionalAllowedCharacter) {
                         return false;
                     }
@@ -1720,7 +1728,7 @@ class HTMLTokenizer {
                             //  result = result * 16 + asHexDigit($char);
                         }
                     } else if ($cc === ';') {
-                        // source.advanceAndASSERT($char);
+                        $source->advance();
                         // decodedCharacter.append(ParserFunctions::legalEntityFor(result));
                         return true;
                         // } else if (ParserFunctions::acceptMalformed()) {
@@ -1728,6 +1736,7 @@ class HTMLTokenizer {
                         //     return true;
                     } else {
                         // unconsumeCharacters(source, consumedCharacters);
+                        $source->seek($position);
                         return false;
                     }
                     break;
@@ -1737,7 +1746,6 @@ class HTMLTokenizer {
                             // result = result * 10 + cc - '0';
                         }
                     } else if ($cc === ';') {
-                        // source.advanceAndASSERT($char);
                         // decodedCharacter.append(ParserFunctions::legalEntityFor(result));
                         $source->advance();
                         return true;
@@ -1745,7 +1753,8 @@ class HTMLTokenizer {
                         //    decodedCharacter.append(ParserFunctions::legalEntityFor(result));
                         //     return true;
                     } else {
-                        //   unconsumeCharacters(source, consumedCharacters);
+                        // unconsumeCharacters(source, consumedCharacters);
+                        $source->seek($position);
                         return false;
                     }
                     break;
@@ -1756,32 +1765,40 @@ class HTMLTokenizer {
             if ($result > 0x10ffff) {
                 $result = 'kInvalidUnicode';
             }
-            //  consumedCharacters.append(cc);
-            // source.advanceAndASSERT(cc);
+            // consumedCharacters.append(cc);
             $consumedCharacters[] = $cc;
-
             $source->advance();
         }
         // $notEnoughCharacters = true;
+        // unconsumeCharacters(source, consumedCharacters);
+        $source->seek($position);
         return 'notEnoughCharacters';
     }
 
+    /**
+     * @param SegmentedString $source
+     * @param $decodedEntity
+     * @param $notEnoughCharacters
+     * @param $additionalAllowedCharacter
+     * @param $cc
+     * @see https://chromium.googlesource.com/chromium/blink/+/master/Source/core/html/parser/HTMLEntityParser.cpp
+     * @return bool
+     */
     protected function _consumeNamedEntity(SegmentedString $source, $decodedEntity, $notEnoughCharacters, $additionalAllowedCharacter, $cc) {
-        $pos = $source->tell();
-
         while (!$source->eos()) {
-            $char = $source->read(1);
-            if ($char === ';') {
-                $source->seek($pos);
+            $char = $source->getCurrentChar();
+            if ($additionalAllowedCharacter !== null && $char === $additionalAllowedCharacter) {
+                return false;
+            } else if ($char === ';') {
+                $source->advance();
                 return true;
             } else if (preg_match('/\A[a-zA-Z]\Z/', $char)) {
+                $source->advance();
                 continue;
             } else {
-                $source->seek($pos);
                 return false;
             }
         }
-        $source->seek($pos);
         return false;
     }
 

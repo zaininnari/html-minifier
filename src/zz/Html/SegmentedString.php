@@ -64,8 +64,13 @@ class SegmentedString {
         return mb_substr($this->str, $this->i - $i, $i, static::ENCODING);
     }
 
-    function substr($startPos, $endPos) {
-        return mb_substr($this->str, $startPos, $endPos, static::ENCODING);
+    /**
+     * @param int $startPos
+     * @param int $length
+     * @return string
+     */
+    function substr($startPos, $length) {
+        return mb_substr($this->str, $startPos, $length, static::ENCODING);
     }
 
     /**

@@ -242,10 +242,9 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
             ),
         );
         $this->assertEquals($expect, $actual);
-
     }
 
-    public function testCharDecimal() {
+    public function testEntityDecimal() {
         $html = '&#34;';
         $SegmentedString = new SegmentedString($html);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
@@ -265,10 +264,9 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
             ),
         );
         $this->assertEquals($expect, $actual);
-
     }
 
-    public function testCharNamed() {
+    public function testEntityNamed() {
         $html = '&amp;';
         $SegmentedString = new SegmentedString($html);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
@@ -289,9 +287,184 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         );
         $this->assertEquals($expect, $actual);
 
+        $html = '<p id="&a';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '&',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => false,
+                'html' => '<p id="&',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueDoubleQuotedState',
+                    8 => 'CharacterReferenceInAttributeValueState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'a',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = '<p id="&amp;">';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '&amp;',
+                        'quoted' => '"',
+                    ),
+                ),
+                'parseError' => false,
+                'html' => '<p id="&amp;">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueDoubleQuotedState',
+                    8 => 'CharacterReferenceInAttributeValueState',
+                    12 => 'AttributeValueDoubleQuotedState',
+                    13 => 'AfterAttributeValueQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = '<p id="aaaaa&amp;aaaa">';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => 'aaaaa&amp;aaaa',
+                        'quoted' => '"',
+                    ),
+                ),
+                'parseError' => false,
+                'html' => '<p id="aaaaa&amp;aaaa">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueDoubleQuotedState',
+                    13 => 'CharacterReferenceInAttributeValueState',
+                    17 => 'AttributeValueDoubleQuotedState',
+                    22 => 'AfterAttributeValueQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
     }
 
-    public function testCharDecimalInvalid() {
+    public function testEntityInvalid() {
+        $html = $source = '&';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Uninitialized',
+                'data' => '&',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '&',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '&&';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => '&&',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '&&',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '&&&';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => '&&&',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '&&&',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testEntityDecimalInvalid() {
         $html = '&#34';
         $SegmentedString = new SegmentedString($html);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
@@ -300,19 +473,28 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'Uninitialized',
-                'data' => '&#34',
+                'data' => '&',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '&#34',
+                'html' => '&',
                 'state' => array(
                     0 => 'DataState',
-                    1 => 'CharacterReferenceInDataState'
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '#34',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '#34',
+                'state' => array(
+                    0 => 'DataState',
                 ),
             ),
         );
         $this->assertEquals($expect, $actual);
-
     }
 
     public function testTag() {
@@ -537,29 +719,6 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
             ),
         );
         $this->assertEquals($expect, $actual);
-    }
-
-    public function testCharacterReferenceInDataState() {
-        $html = $source = '&';
-        $SegmentedString = new SegmentedString($html);
-        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
-        $HTMLTokenizer->tokenizer();
-        $actual = $HTMLTokenizer->getTokensAsArray();
-        $expect = array(
-            0 => array(
-                'type' => 'Uninitialized',
-                'data' => '&',
-                'selfClosing' => false,
-                'attributes' => array(),
-                'parseError' => false,
-                'html' => '&',
-                'state' => array(
-                    0 => 'DataState',
-                ),
-            ),
-        );
-        $this->assertEquals($expect, $actual);
-
     }
 
     public function testTagImg() {

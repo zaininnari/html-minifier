@@ -45,4 +45,5 @@ class SegmentedStringTest extends \PHPUnit_Framework_TestCase {
         $SegmentedString = new SegmentedString($html);
         $this->assertEquals(false, $SegmentedString->seek(10, -1));
     }
+
 }
