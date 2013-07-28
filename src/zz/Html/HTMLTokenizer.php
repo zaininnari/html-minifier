@@ -104,7 +104,8 @@ class HTMLTokenizer {
     const CDATASectionRightSquareBracketState = 'CDATASectionRightSquareBracketState';
     const CDATASectionDoubleRightSquareBracketState = 'CDATASectionDoubleRightSquareBracketState';
 
-    const kEndOfFileMarker = null;
+    // set substr FALSE on failure
+    const kEndOfFileMarker = false;
     /**
      * @var SegmentedString
      */
@@ -127,6 +128,7 @@ class HTMLTokenizer {
      */
     protected $_tokens = array();
     protected $_state;
+    protected $_startState;
     protected $_additionalAllowedCharacter = null;
 
     /**
@@ -144,11 +146,18 @@ class HTMLTokenizer {
      */
     protected $_appropriateEndTagName = '';
 
+    /**
+     * @var bool
+     */
+    protected $_debug = false;
+
     public function __construct(SegmentedString $SegmentedString, $option = array()) {
         $this->_SegmentedString = $SegmentedString;
         $this->_Token = new HTMLToken();
         $this->_state = static::DataState;
+        $this->_startState = static::DataState;
         $this->_option = $option + array('debug' => false);
+        $this->_debug = !!$this->_option['debug'];
     }
 
     /**
@@ -183,11 +192,11 @@ class HTMLTokenizer {
                 throw new \InvalidArgumentException('Given invalid string or invalid statement.');
             }
 
-            $startState = $this->_buffer[0];
+            $startState = $this->_startState;
             // In other than `DataState`, `nextToken` return the type of Character, it contains the type of EndTag.
             // SegmentedString go back to the end of the type of Character position.
             if ($this->_Token->getType() === HTMLToken::Character && $this->_bufferedEndTagName !== '' && ($startState === static::RAWTEXTState || $startState === static::RCDATAState || $startState === static::ScriptDataState)) {
-                $length = mb_strlen($this->_Token->getData(), SegmentedString::ENCODING);
+                $length = strlen($this->_Token->getData());
 
                 // HTMLToken::Character
                 $this->_buffer = array_slice($this->_buffer, 0, $length);
@@ -209,6 +218,7 @@ class HTMLTokenizer {
                     $this->_state = static::DataState;
                 }
             }
+            $this->_startState = $this->_state;
 
             $this->_buffer = array();
             $this->_bufferedEndTagName = '';
@@ -231,7 +241,7 @@ class HTMLTokenizer {
 
     protected function _compactBuffer($startPos, $endPos) {
         $compactBuffer = array();
-        $before = null;
+        $before = static::kEndOfFileMarker;
         $html = $this->_SegmentedString->substr($startPos, $endPos - $startPos);
         foreach ($this->_buffer as $i => $state) {
             if ($before !== $state) {
@@ -248,7 +258,7 @@ class HTMLTokenizer {
                 break;
         }
 
-        if ($this->_option['debug']) {
+        if ($this->_debug) {
             $this->_Token->setHtmlOrigin($html);
             $this->_Token->setState($compactBuffer);
         }
@@ -270,7 +280,7 @@ class HTMLTokenizer {
     // http://www.whatwg.org/specs/web-apps/current-work/#tokenization
     protected function nextToken(SegmentedString $source) {
         while (true) {
-            $char = $this->_nextInputCharacter();
+            $char = $this->_SegmentedString->getCurrentChar();
             switch ($this->_state) {
                 case static::DataState:
                     if ($char === '&') {
@@ -283,7 +293,7 @@ class HTMLTokenizer {
                         }
                         $this->_HTML_ADVANCE_TO(static::TagOpenState);
                     } elseif ($char === static::kEndOfFileMarker) {
-                        return $this->_emitEndOfFile($source);
+                        return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
                         $this->_HTML_ADVANCE_TO(static::DataState);
@@ -301,7 +311,7 @@ class HTMLTokenizer {
                     } else if ($char === '<') {
                         $this->_HTML_ADVANCE_TO(static::RCDATALessThanSignState);
                     } else if ($char === static::kEndOfFileMarker) {
-                        return $this->_emitEndOfFile($source);
+                        return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
                         $this->_HTML_ADVANCE_TO(static::RCDATAState);
@@ -317,7 +327,7 @@ class HTMLTokenizer {
                     if ($char === '<') {
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTLessThanSignState);
                     } else if ($char === static::kEndOfFileMarker) {
-                        return $this->_emitEndOfFile($source);
+                        return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTState);
@@ -328,7 +338,7 @@ class HTMLTokenizer {
                     if ($char === '<') {
                         $this->_HTML_ADVANCE_TO(static::ScriptDataLessThanSignState);
                     } else if ($char === static::kEndOfFileMarker) {
-                        return $this->_emitEndOfFile($source);
+                        return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataState);
@@ -337,7 +347,7 @@ class HTMLTokenizer {
 
                 case static::PLAINTEXTState:
                     if ($char === static::kEndOfFileMarker) {
-                        return $this->_emitEndOfFile($source);
+                        return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
                         $this->_HTML_ADVANCE_TO(static::PLAINTEXTState);
@@ -395,7 +405,7 @@ class HTMLTokenizer {
                     } else if ($char === '/') {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
                     } elseif ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->appendToName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
@@ -869,7 +879,7 @@ class HTMLTokenizer {
                     } else if ($char === '/') {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->addNewAttribute();
                         $this->_Token->beginAttributeName($source->numberOfCharactersConsumed());
@@ -901,7 +911,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::BeforeAttributeValueState);
                     } else if ($char === '>') {
                         $this->_Token->endAttributeName($source->numberOfCharactersConsumed());
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->appendToAttributeName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::AttributeNameState);
@@ -926,7 +936,7 @@ class HTMLTokenizer {
                     } else if ($char === '=') {
                         $this->_HTML_ADVANCE_TO(static::BeforeAttributeValueState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->addNewAttribute();
                         $this->_Token->beginAttributeName($source->numberOfCharactersConsumed());
@@ -960,7 +970,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::AttributeValueSingleQuotedState);
                     } else if ($char === '>') {
                         $this->_parseError();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_HTML_RECONSUME_IN(static::DataState);
@@ -1019,7 +1029,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::CharacterReferenceInAttributeValueState);
                     } else if ($char === '>') {
                         $this->_Token->endAttributeValue($source->numberOfCharactersConsumed());
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->endAttributeValue($source->numberOfCharactersConsumed());
@@ -1057,7 +1067,7 @@ class HTMLTokenizer {
                     } else if ($char === '/') {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_HTML_RECONSUME_IN(static::DataState);
@@ -1070,7 +1080,7 @@ class HTMLTokenizer {
                 case static::SelfClosingStartTagState:
                     if ($char === '>') {
                         $this->_Token->setSelfClosing();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_HTML_RECONSUME_IN(static::DataState);
@@ -1087,7 +1097,7 @@ class HTMLTokenizer {
 
                 case static::ContinueBogusCommentState:
                     if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         return $this->_emitAndReconsumeIn($source, HTMLTokenizer::DataState);
                     } else {
@@ -1144,7 +1154,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::CommentStartDashState);
                     } else if ($char === '>') {
                         $this->_parseError();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         return $this->_emitAndReconsumeIn($source, HTMLTokenizer::DataState);
@@ -1159,7 +1169,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::CommentEndState);
                     } else if ($char === '>') {
                         $this->_parseError();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         return $this->_emitAndReconsumeIn($source, HTMLTokenizer::DataState);
@@ -1197,7 +1207,7 @@ class HTMLTokenizer {
 
                 case static::CommentEndState:
                     if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === '!') {
                         $this->_parseError();
                         $this->_HTML_ADVANCE_TO(static::CommentEndBangState);
@@ -1224,7 +1234,7 @@ class HTMLTokenizer {
                         $this->_Token->appendToComment('!');
                         $this->_HTML_ADVANCE_TO(static::CommentEndDashState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError(true);
                         return $this->_emitAndReconsumeIn($source, HTMLTokenizer::DataState);
@@ -1261,7 +1271,7 @@ class HTMLTokenizer {
                         $this->_parseError();
                         $this->_Token->beginDOCTYPE();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError(true);
                         $this->_Token->beginDOCTYPE();
@@ -1277,7 +1287,7 @@ class HTMLTokenizer {
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::AfterDOCTYPENameState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->appendToName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::DOCTYPENameState);
@@ -1295,7 +1305,7 @@ class HTMLTokenizer {
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::AfterDOCTYPENameState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError(true);
                         $this->_Token->setForceQuirks();
@@ -1347,7 +1357,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError(true);
                         $this->_Token->setForceQuirks();
@@ -1371,7 +1381,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError(true);
                         $this->_Token->setForceQuirks();
@@ -1389,7 +1399,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1406,7 +1416,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1421,7 +1431,7 @@ class HTMLTokenizer {
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::BetweenDOCTYPEPublicAndSystemIdentifiersState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === '"') {
                         $this->_parseError();
                         $this->_Token->setSystemIdentifierToEmptyString();
@@ -1445,7 +1455,7 @@ class HTMLTokenizer {
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::BetweenDOCTYPEPublicAndSystemIdentifiersState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === '"') {
                         $this->_Token->setSystemIdentifierToEmptyString();
                         $this->_HTML_ADVANCE_TO(static::DOCTYPESystemIdentifierDoubleQuotedState);
@@ -1477,7 +1487,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1503,7 +1513,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1521,7 +1531,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1538,7 +1548,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1553,7 +1563,7 @@ class HTMLTokenizer {
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::AfterDOCTYPESystemIdentifierState);
                     } else if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         $this->_parseError();
                         $this->_Token->setForceQuirks();
@@ -1566,7 +1576,7 @@ class HTMLTokenizer {
 
                 case static::BogusDOCTYPEState:
                     if ($char === '>') {
-                        return $this->_emitAndResumeIn($source, HTMLTokenizer::DataState);
+                        return $this->_emitAndResumeIn();
                     } else if ($char === static::kEndOfFileMarker) {
                         return $this->_emitAndReconsumeIn($source, HTMLTokenizer::DataState);
                     }
@@ -1608,13 +1618,6 @@ class HTMLTokenizer {
         }
         // ASSERT_NOT_REACHED
         return false;
-    }
-
-    protected function _nextInputCharacter() {
-        if ($this->_SegmentedString->eos()) {
-            return static::kEndOfFileMarker;
-        }
-        return $this->_SegmentedString->getCurrentChar();
     }
 
     protected function _parseError() {
@@ -1659,7 +1662,7 @@ class HTMLTokenizer {
         }
     }
 
-    protected function _emitEndOfFile(SegmentedString $source) {
+    protected function _emitEndOfFile() {
         if ($this->_haveBufferedCharacterToken()) {
             return true;
         }
@@ -1704,7 +1707,7 @@ class HTMLTokenizer {
         return $this->_Token->getType() === HTMLToken::Character;
     }
 
-    protected function _bufferCharacter($char, $m_state = null) {
+    protected function _bufferCharacter($char) {
         $this->_Token->ensureIsCharacterToken();
         $this->_Token->appendToCharacter($char);
     }
@@ -1742,13 +1745,11 @@ class HTMLTokenizer {
         $this->_SegmentedString->advance();
     }
 
-    protected function addState($position = null) {
-        if ($position === null) {
-            $position = $this->_SegmentedString->tell();
+    protected function addState() {
+        if (!$this->_debug) {
+            return;
         }
-        $position -= $this->_startPos;
-        $this->_buffer[$position] = $this->_state;
+        $this->_buffer[$this->_SegmentedString->tell() - $this->_startPos] = $this->_state;
     }
-
 
 }

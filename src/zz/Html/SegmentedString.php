@@ -41,21 +41,18 @@ class SegmentedString {
      */
     public function __construct($str) {
         $this->str = $str;
-        $this->len = mb_strlen($str, static::ENCODING);
+        $this->len = strlen($str);
     }
 
     /**
      * @return bool|string
      */
     public function  getCurrentChar() {
-        if ($this->eos()) {
-            return false;
-        }
-        return mb_substr($this->str, $this->i, 1, static::ENCODING);
+        return substr($this->str, $this->i, 1);
     }
 
     public function advance() {
-        return $this->seek(1, static::current);
+        $this->i += 1;
     }
 
     /**
@@ -67,7 +64,7 @@ class SegmentedString {
             return false;
         }
         $this->i += $i;
-        return mb_substr($this->str, $this->i - $i, $i, static::ENCODING);
+        return substr($this->str, $this->i - $i, $i);
     }
 
     /**
@@ -76,7 +73,7 @@ class SegmentedString {
      * @return string
      */
     public function substr($startPos, $length) {
-        return mb_substr($this->str, $startPos, $length, static::ENCODING);
+        return substr($this->str, $startPos, $length);
     }
 
     /**
@@ -128,7 +125,7 @@ class SegmentedString {
     }
 
     public function token($str, $caseSensitive = true) {
-        $matched = $this->read(mb_strlen($str, static::ENCODING));
+        $matched = $this->read(strlen($str));
         if ($caseSensitive) {
             return $str === $matched ? $str : false;
         } else {
@@ -145,10 +142,10 @@ class SegmentedString {
     }
 
     protected function _lookAhead($str, $caseSensitive = true) {
-        $i = $this->tell();
+        $i = $this->i;
         $result = $this->token($str, $caseSensitive) !== false;
         $this->seek($i);
-        if (mb_strlen($str, static::ENCODING) + $this->tell() <= $this->len) {
+        if (strlen($str) + $i <= $this->len) {
             if ($result) {
                 return static::DidMatch;
             }
@@ -166,7 +163,7 @@ class SegmentedString {
         //         ++numberOfPushedCharacters;
         // }
         // return m_numberOfCharactersConsumedPriorToCurrentString + m_currentString.numberOfCharactersConsumed() - numberOfPushedCharacters;
-        return $this->tell();
+        return $this->i;
     }
 
 }

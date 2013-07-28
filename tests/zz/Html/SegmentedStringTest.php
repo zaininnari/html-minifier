@@ -35,6 +35,9 @@ class SegmentedStringTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(false, $SegmentedString->seek($SegmentedString->len() + 1));
         $this->assertEquals(4, $SegmentedString->seek($SegmentedString->len() - 1));
         $this->assertEquals(false, $SegmentedString->seek(10, SegmentedString::current));
+        $SegmentedString->seek(0);
+        $this->assertEquals(true, $SegmentedString->seek(1, SegmentedString::current));
+        $this->assertEquals(1, $SegmentedString->tell());
     }
 
     /**

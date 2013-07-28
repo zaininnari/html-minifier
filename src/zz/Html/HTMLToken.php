@@ -291,4 +291,5 @@ class HTMLToken {
     public function appendToSystemIdentifier($character) {
         // m_doctypeData->m_systemIdentifier.append(character);
     }
+
 }
