@@ -306,13 +306,7 @@ class HTMLTokenizer {
                     break;
 
                 case static::CharacterReferenceInDataState:
-                    $position = $source->tell();
-                    if (!$this->_processEntity($source)) {
-                        if ($source->tell() !== $position) {
-                            $this->addState($position);
-                        }
-                        return $this->_haveBufferedCharacterToken();
-                    }
+                    // TODO Do not expand the reference, so skip parse Character references.
                     $this->_HTML_SWITCH_TO(static::DataState);
                     break;
 
@@ -330,13 +324,7 @@ class HTMLTokenizer {
                     break;
 
                 case static::CharacterReferenceInRCDATAState:
-                    $position = $source->tell();
-                    if (!$this->_processEntity($source)) {
-                        if ($source->tell() !== $position) {
-                            $this->addState($position);
-                        }
-                        return $this->_haveBufferedCharacterToken();
-                    }
+                    // TODO Do not expand the reference, so skip parse Character references.
                     $this->_HTML_SWITCH_TO(static::RCDATAState);
                     break;
 
@@ -1028,23 +1016,8 @@ class HTMLTokenizer {
                     break;
 
                 case static::CharacterReferenceInAttributeValueState:
-                    $notEnoughCharacters = false;
-                    $decodedEntity = array();
-                    $position = $source->tell();
-                    $this->addState($position);
-                    $success = $this->_consumeHTMLEntity($source, $decodedEntity, $notEnoughCharacters, $this->_additionalAllowedCharacter);
-                    if ($success === 'notEnoughCharacters') {
-                        $this->_Token->appendToAttributeValue('&');
-                        return $this->_haveBufferedCharacterToken();
-                    }
-                    if (!$success) {
-                         $this->_Token->appendToAttributeValue('&');
-                    } else {
-                        // for ($i = 0; $i < count($decodedEntity); ++$i)
-                        //     $this->_Token->appendToAttributeValue($decodedEntity[$i]);
-                        $value = '&' . $source->substr($position, $source->tell() - $position);
-                        $this->_Token->appendToAttributeValue($value);
-                    }
+                    // TODO Do not expand the reference, so skip parse Character references.
+                    $this->_Token->appendToAttributeValue('&');
                     // We're supposed to switch back to the attribute value state that
                     // we were in when we were switched into this state. Rather than
                     // keeping track of this explictly, we observe that the previous
@@ -1636,174 +1609,6 @@ class HTMLTokenizer {
     protected function _notImplemented() {
         // Source/core/platform/NotImplemented.h
         // logger
-    }
-
-    protected function _processEntity(SegmentedString $source) {
-        $notEnoughCharacters = false;
-        $decodedEntity = array();
-        $startPosition = $source->tell();
-        $success = $this->_consumeHTMLEntity($source, $decodedEntity, $notEnoughCharacters);
-        if ($success === 'notEnoughCharacters') {
-            return false;
-        }
-        $source->seek($startPosition);
-        if (!$success) {
-            $this->_bufferCharacter('&');
-        } else {
-            $currentPosition = $source->tell();
-            $source->seek($startPosition);
-            $decodedEntity = '&' . $source->read($currentPosition - $startPosition);
-            $this->_bufferCharacter($decodedEntity);
-        }
-        return true;
-    }
-
-// Source/core/html/parser/HTMLEntityParser.cpp
-// consumeHTMLEntity
-// Source/core/xml/parser/CharacterReferenceParserInlines.h
-// consumeCharacterReference
-    protected function _consumeHTMLEntity(SegmentedString $source, $decodedEntity, $notEnoughCharacters, $additionalAllowedCharacter = null) {
-        $entityState = 'Initial';
-        $result = 0;
-        $position = $source->tell();
-        $consumedCharacters = array();
-        while (!$source->eos()) {
-            $cc = $source->getCurrentChar();
-            switch ($entityState) {
-                case 'Initial':
-                    if ($cc === "\x09" || $cc === "\x0A" || $cc === "\x0C" || $cc === ' ' || $cc === '<' || $cc === '&') {
-                        return false;
-                    }
-                    if ($additionalAllowedCharacter !== null && $cc === $additionalAllowedCharacter) {
-                        return false;
-                    }
-                    if ($cc === '#') {
-                        $entityState = 'Number';
-                        break;
-                    }
-                    if (preg_match('/\A[a-zA-Z]\Z/', $cc)) {
-                        $entityState = 'Named';
-                        continue;
-                    }
-                    return false;
-                case  'Number':
-                    if ($cc === 'x') {
-                        $entityState = 'MaybeHexLowerCaseX';
-                        break;
-                    }
-                    if ($cc === 'X') {
-                        $entityState = 'MaybeHexUpperCaseX';
-                        break;
-                    }
-                    if (preg_match('/\A[0-9]\Z/', $cc)) {
-                        $entityState = 'Decimal';
-                        continue;
-                    }
-                    // source.push('#');
-                    $source->advance();
-                    return false;
-                case 'MaybeHexLowerCaseX':
-                    if ($this->_isHexDigit($cc)) {
-                        $entityState = 'Hex';
-                        continue;
-                    }
-                    //source.push('#');
-                    //source.push('x');
-                    $source->advance();
-                    $source->advance();
-                    return false;
-                case 'MaybeHexUpperCaseX':
-                    if ($this->_isHexDigit($cc)) {
-                        $entityState = 'Hex';
-                        continue;
-                    }
-                    //source.push('#');
-                    //source.push('X');
-                    $source->advance();
-                    $source->advance();
-                    return false;
-                case 'Hex':
-                    if ($this->_isHexDigit($cc)) {
-                        if ($result !== 'kInvalidUnicode') {
-                            //  result = result * 16 + asHexDigit($char);
-                        }
-                    } else if ($cc === ';') {
-                        $source->advance();
-                        // decodedCharacter.append(ParserFunctions::legalEntityFor(result));
-                        return true;
-                        // } else if (ParserFunctions::acceptMalformed()) {
-                        // decodedCharacter.append(ParserFunctions::legalEntityFor(result));
-                        //     return true;
-                    } else {
-                        // unconsumeCharacters(source, consumedCharacters);
-                        $source->seek($position);
-                        return false;
-                    }
-                    break;
-                case 'Decimal':
-                    if (preg_match('/\A[0-9]\Z/', $cc)) {
-                        if ($result !== 'kInvalidUnicode') {
-                            // result = result * 10 + cc - '0';
-                        }
-                    } else if ($cc === ';') {
-                        // decodedCharacter.append(ParserFunctions::legalEntityFor(result));
-                        $source->advance();
-                        return true;
-                        // } else if (ParserFunctions::acceptMalformed()) {
-                        //    decodedCharacter.append(ParserFunctions::legalEntityFor(result));
-                        //     return true;
-                    } else {
-                        // unconsumeCharacters(source, consumedCharacters);
-                        $source->seek($position);
-                        return false;
-                    }
-                    break;
-                case 'Named':
-                    return $this->_consumeNamedEntity($source, $decodedEntity, $notEnoughCharacters, $additionalAllowedCharacter, $cc);
-            }
-            // UCHAR_MAX_VALUE 0x10ffff
-            if ($result > 0x10ffff) {
-                $result = 'kInvalidUnicode';
-            }
-            // consumedCharacters.append(cc);
-            $consumedCharacters[] = $cc;
-            $source->advance();
-        }
-        // $notEnoughCharacters = true;
-        // unconsumeCharacters(source, consumedCharacters);
-        $source->seek($position);
-        return 'notEnoughCharacters';
-    }
-
-    /**
-     * @param SegmentedString $source
-     * @param $decodedEntity
-     * @param $notEnoughCharacters
-     * @param $additionalAllowedCharacter
-     * @param $cc
-     * @see https://chromium.googlesource.com/chromium/blink/+/master/Source/core/html/parser/HTMLEntityParser.cpp
-     * @return bool
-     */
-    protected function _consumeNamedEntity(SegmentedString $source, $decodedEntity, $notEnoughCharacters, $additionalAllowedCharacter, $cc) {
-        while (!$source->eos()) {
-            $char = $source->getCurrentChar();
-            if ($additionalAllowedCharacter !== null && $char === $additionalAllowedCharacter) {
-                return false;
-            } else if ($char === ';') {
-                $source->advance();
-                return true;
-            } else if (preg_match('/\A[a-zA-Z]\Z/', $char)) {
-                $source->advance();
-                continue;
-            } else {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    protected function _isHexDigit($cc) {
-        return preg_match('/\A[0-9a-fA-F]\Z/', $cc);
     }
 
     protected function _isASCIIUpper($char) {

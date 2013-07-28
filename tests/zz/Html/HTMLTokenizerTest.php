@@ -294,18 +294,18 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
-                'type' => 'StartTag',
-                'data' => 'p',
+                'type' => 'EndOfFile',
+                'data' => '<p id="&a',
                 'selfClosing' => false,
                 'attributes' => array(
                     0 => array(
                         'name' => 'id',
-                        'value' => '&',
+                        'value' => '&a',
                         'quoted' => false,
                     ),
                 ),
-                'parseError' => false,
-                'html' => '<p id="&',
+                'parseError' => true,
+                'html' => '<p id="&a',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -314,18 +314,6 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     4 => 'AttributeNameState',
                     6 => 'BeforeAttributeValueState',
                     7 => 'AttributeValueDoubleQuotedState',
-                    8 => 'CharacterReferenceInAttributeValueState',
-                ),
-            ),
-            1 => array(
-                'type' => 'Character',
-                'data' => 'a',
-                'selfClosing' => false,
-                'attributes' => array(),
-                'parseError' => false,
-                'html' => 'a',
-                'state' => array(
-                    0 => 'DataState',
                 ),
             ),
         );
@@ -358,8 +346,6 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     4 => 'AttributeNameState',
                     6 => 'BeforeAttributeValueState',
                     7 => 'AttributeValueDoubleQuotedState',
-                    8 => 'CharacterReferenceInAttributeValueState',
-                    12 => 'AttributeValueDoubleQuotedState',
                     13 => 'AfterAttributeValueQuotedState',
                 ),
             ),
@@ -393,8 +379,6 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     4 => 'AttributeNameState',
                     6 => 'BeforeAttributeValueState',
                     7 => 'AttributeValueDoubleQuotedState',
-                    13 => 'CharacterReferenceInAttributeValueState',
-                    17 => 'AttributeValueDoubleQuotedState',
                     22 => 'AfterAttributeValueQuotedState',
                 ),
             ),
@@ -410,7 +394,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
-                'type' => 'Uninitialized',
+                'type' => 'EndOfFile',
                 'data' => '&',
                 'selfClosing' => false,
                 'attributes' => array(),
@@ -430,7 +414,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
-                'type' => 'Character',
+                'type' => 'EndOfFile',
                 'data' => '&&',
                 'selfClosing' => false,
                 'attributes' => array(),
@@ -450,7 +434,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
-                'type' => 'Character',
+                'type' => 'EndOfFile',
                 'data' => '&&&',
                 'selfClosing' => false,
                 'attributes' => array(),
@@ -472,23 +456,12 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
-                'type' => 'Uninitialized',
-                'data' => '&',
-                'selfClosing' => false,
-                'attributes' => array(),
-                'parseError' => false,
-                'html' => '&',
-                'state' => array(
-                    0 => 'DataState',
-                ),
-            ),
-            1 => array(
                 'type' => 'Character',
-                'data' => '#34',
+                'data' => '&#34',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '#34',
+                'html' => '&#34',
                 'state' => array(
                     0 => 'DataState',
                 ),
