@@ -286,10 +286,8 @@ javascript
     }
 
     public function testTagInvalid() {
-        $source = '<DIV>    end
-    </';
-        $expect = '<div> end
-</';
+        $source = '<DIV>    end' . chr(10) . '    </';
+        $expect = '<div> end'.chr(10).'</';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 

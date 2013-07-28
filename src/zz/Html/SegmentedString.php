@@ -36,11 +36,17 @@ class SegmentedString {
     protected $i = 0;
     protected $len = 0;
 
-    function __construct($str) {
+    /**
+     * @param $str
+     */
+    public function __construct($str) {
         $this->str = $str;
         $this->len = mb_strlen($str, static::ENCODING);
     }
 
+    /**
+     * @return bool|string
+     */
     public function  getCurrentChar() {
         if ($this->eos()) {
             return false;
@@ -56,7 +62,7 @@ class SegmentedString {
      * @param int $i
      * @return string
      */
-    function read($i) {
+    public function read($i) {
         if ($this->eos() && $i > 0) {
             return false;
         }
@@ -69,7 +75,7 @@ class SegmentedString {
      * @param int $length
      * @return string
      */
-    function substr($startPos, $length) {
+    public function substr($startPos, $length) {
         return mb_substr($this->str, $startPos, $length, static::ENCODING);
     }
 
@@ -77,7 +83,7 @@ class SegmentedString {
      * @param int $offset
      * @return bool
      */
-    function seek($offset, $whence = self::begin) {
+    public function seek($offset, $whence = self::begin) {
         switch ($whence) {
             case static::begin:
                 if ($this->len < $offset) {
@@ -102,26 +108,26 @@ class SegmentedString {
     /**
      * @return int
      */
-    function tell() {
+    public function tell() {
         return $this->i;
     }
 
     /**
      * @return bool
      */
-    function eos() {
+    public function eos() {
         return $this->len <= $this->i;
     }
 
-    function get() {
+    public function get() {
         return $this->str;
     }
 
-    function len() {
+    public function len() {
         return $this->len;
     }
 
-    function token($str, $caseSensitive = true) {
+    public function token($str, $caseSensitive = true) {
         $matched = $this->read(mb_strlen($str, static::ENCODING));
         if ($caseSensitive) {
             return $str === $matched ? $str : false;
@@ -130,11 +136,11 @@ class SegmentedString {
         }
     }
 
-    function lookAheadIgnoringCase($str) {
+    public function lookAheadIgnoringCase($str) {
         return $this->_lookAhead($str, false);
     }
 
-    function lookAhead($str) {
+    public function lookAhead($str) {
         return $this->_lookAhead($str, true);
     }
 

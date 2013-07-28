@@ -4,6 +4,36 @@ use zz\Html;
 
 class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
 
+    public function testSetState() {
+        $html = '';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $expect = HTMLTokenizer::RAWTEXTState;
+        $HTMLTokenizer->setState($expect);
+        $actual = $HTMLTokenizer->getState();
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testGetState() {
+        $html = '';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $actual = $HTMLTokenizer->getState();
+        $expect = HTMLTokenizer::DataState;
+        $this->assertEquals($expect, $actual);
+    }
+
+    /**
+     * @expectedException InvalidArgumentException
+     */
+    public function testInvalidState() {
+        $html = 'text';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->setState('');
+        $HTMLTokenizer->tokenizer();
+    }
+
     public function testEmpty() {
         $html = '';
         $SegmentedString = new SegmentedString($html);
@@ -583,11 +613,8 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
     }
 
-
     public function testCDATA() {
-        $html = '<![CDATA[
-  var i = 0;
- //]]>';
+        $html = '<![CDATA[' . chr(10) . '  var i = 0;' . chr(10) . ' //]]>';
         $SegmentedString = new SegmentedString($html);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
         $HTMLTokenizer->tokenizer();
@@ -595,15 +622,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'Character',
-                'data' => '<![CDATA[
-  var i = 0;
- //]]>',
+                'data' => $html,
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '<![CDATA[
-  var i = 0;
- //]]>',
+                'html' => $html,
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -618,22 +641,19 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testConditionalComment() {
-        $html = $source = '<!--[if expression]>
-          HTML <![endif]-->';
-        $SegmentedString = new SegmentedString($html);
+        $source = '<!--[if expression]>' . chr(10) . '          HTML <![endif]-->';
+        $SegmentedString = new SegmentedString($source);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
         $HTMLTokenizer->tokenizer();
         $actual = $HTMLTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
                 'type' => 'Comment',
-                'data' => '<!--[if expression]>
-          HTML <![endif]-->',
+                'data' => $source,
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '<!--[if expression]>
-          HTML <![endif]-->',
+                'html' => $source,
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -841,7 +861,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         );
         $this->assertEquals($expect, $actual);
 
-        $html = $source = '<DIV>end</';
+        $html = $source = '<DIV>end' . '</';
         $SegmentedString = new SegmentedString($html);
         $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
         $HTMLTokenizer->tokenizer();
@@ -1385,15 +1405,26 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'Uninitialized',
-                'data' => '<!-',
+                'data' => '<!',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '<!-',
+                'html' => '<!',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '-',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '-',
+                'state' => array(
+                    0 => 'DataState',
                 ),
             ),
         );
@@ -3116,9 +3147,198 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'parseError' => false,
                 'html' => '</style>',
                 'state' => array(
-                    0 => 'RAWTEXTLessThanSignState',
-                    1 => 'RAWTEXTEndTagOpenState',
-                    2 => 'RAWTEXTEndTagNameState',
+                    0 => 'RAWTEXTState',
+                    1 => 'RAWTEXTLessThanSignState',
+                    2 => 'RAWTEXTEndTagOpenState',
+                    3 => 'RAWTEXTEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<STYLE>  /**/  </STYLE>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<STYLE>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</STYLE>',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                    1 => 'RAWTEXTLessThanSignState',
+                    2 => 'RAWTEXTEndTagOpenState',
+                    3 => 'RAWTEXTEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>  /**/  </>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<style>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </>',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                    9 => 'RAWTEXTLessThanSignState',
+                    10 => 'RAWTEXTState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>  /**/  <a';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<style>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  <a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  <a',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>  /**/  </stylea>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<style>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </stylea>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </stylea>',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                    9 => 'RAWTEXTLessThanSignState',
+                    10 => 'RAWTEXTEndTagOpenState',
+                    11 => 'RAWTEXTEndTagNameState',
+                    16 => 'RAWTEXTState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>  /**/  </a_';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'style',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<style>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </a_',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </a_',
+                'state' => array(
+                    0 => 'RAWTEXTState',
+                    9 => 'RAWTEXTLessThanSignState',
+                    10 => 'RAWTEXTEndTagOpenState',
+                    11 => 'RAWTEXTState'
                 ),
             ),
         );
@@ -3164,9 +3384,198 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'parseError' => false,
                 'html' => '</script>',
                 'state' => array(
-                    0 => 'ScriptDataLessThanSignState',
-                    1 => 'ScriptDataEndTagOpenState',
-                    2 => 'ScriptDataEndTagNameState',
+                    0 => 'ScriptDataState',
+                    1 => 'ScriptDataLessThanSignState',
+                    2 => 'ScriptDataEndTagOpenState',
+                    3 => 'ScriptDataEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<SCRIPT>  /**/  </SCRIPT>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<SCRIPT>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</SCRIPT>',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    1 => 'ScriptDataLessThanSignState',
+                    2 => 'ScriptDataEndTagOpenState',
+                    3 => 'ScriptDataEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>  /**/  </>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </>',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    9 => 'ScriptDataLessThanSignState',
+                    10 => 'ScriptDataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>  /**/  <a';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  <a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  <a',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>  /**/  </scripta>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </scripta>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </scripta>',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    9 => 'ScriptDataLessThanSignState',
+                    10 => 'ScriptDataEndTagOpenState',
+                    11 => 'ScriptDataEndTagNameState',
+                    17 => 'ScriptDataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>  /**/  </a_';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </a_',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </a_',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    9 => 'ScriptDataLessThanSignState',
+                    10 => 'ScriptDataEndTagOpenState',
+                    11 => 'ScriptDataState'
                 ),
             ),
         );
@@ -3212,9 +3621,198 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'parseError' => false,
                 'html' => '</title>',
                 'state' => array(
-                    0 => 'RCDATALessThanSignState',
-                    1 => 'RCDATAEndTagOpenState',
-                    2 => 'RCDATAEndTagNameState',
+                    0 => 'RCDATAState',
+                    1 => 'RCDATALessThanSignState',
+                    2 => 'RCDATAEndTagOpenState',
+                    3 => 'RCDATAEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<TITLE>  /**/  </TITLE>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<TITLE>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  ',
+                'state' => array(
+                    0 => 'RCDATAState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</TITLE>',
+                'state' => array(
+                    0 => 'RCDATAState',
+                    1 => 'RCDATALessThanSignState',
+                    2 => 'RCDATAEndTagOpenState',
+                    3 => 'RCDATAEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<title>  /**/  ' . '</>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<title>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </>',
+                'state' => array(
+                    0 => 'RCDATAState',
+                    9 => 'RCDATALessThanSignState',
+                    10 => 'RCDATAState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<title>  /**/  <a';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<title>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  <a',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  <a',
+                'state' => array(
+                    0 => 'RCDATAState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<title>  /**/  </titlea>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<title>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </titlea>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </titlea>',
+                'state' => array(
+                    0 => 'RCDATAState',
+                    9 => 'RCDATALessThanSignState',
+                    10 => 'RCDATAEndTagOpenState',
+                    11 => 'RCDATAEndTagNameState',
+                    16 => 'RCDATAState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<title>  /**/  </a_';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'title',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<title>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '  /**/  </a_',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '  /**/  </a_',
+                'state' => array(
+                    0 => 'RCDATAState',
+                    9 => 'RCDATALessThanSignState',
+                    10 => 'RCDATAEndTagOpenState',
+                    11 => 'RCDATAState'
                 ),
             ),
         );
@@ -3250,6 +3848,10 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'html' => '<script> var Hello = \'world\';</script>',
                 'state' => array(
                     0 => 'RCDATAState',
+                    30 => 'RCDATALessThanSignState',
+                    31 => 'RCDATAEndTagOpenState',
+                    32 => 'RCDATAEndTagNameState',
+                    37 => 'RCDATAState',
                 ),
             ),
             2 => array(
@@ -3260,12 +3862,2553 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                 'parseError' => false,
                 'html' => '</textarea>',
                 'state' => array(
-                    0 => 'RCDATALessThanSignState',
-                    1 => 'RCDATAEndTagOpenState',
-                    2 => 'RCDATAEndTagNameState',
+                    0 => 'RCDATAState',
+                    1 => 'RCDATALessThanSignState',
+                    2 => 'RCDATAEndTagOpenState',
+                    3 => 'RCDATAEndTagNameState',
                 ),
             ),
         );
         $this->assertEquals($expect, $actual);
     }
+
+    public function testRAWTEXT_FLUSH_AND_ADVANCE_TO() {
+        $html = $source = '<style></style>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'style',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</style>',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style></style >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'style',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</style >',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+                8 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>text</style >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'style',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</style >',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+                8 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>' . '</style ';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</style ',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</style ',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>' . '</style/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'style',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</style/>',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+                8 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>text' . '</style/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'style',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</style/>',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+                8 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<style>' . '</style/';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</style/',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</style/',
+            'state' => array(
+                0 => 'RAWTEXTState',
+                1 => 'RAWTEXTLessThanSignState',
+                2 => 'RAWTEXTEndTagOpenState',
+                3 => 'RAWTEXTEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testScript_FLUSH_AND_ADVANCE_TO() {
+        $html = $source = '<script></script>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script></script >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script >',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>text</script >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script >',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>' . '</script ';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</script ',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</script ',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>' . '</script/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script/>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>text' . '</script/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script/>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>' . '</script/';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</script/',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</script/',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testScriptEscaped_FLUSH_AND_ADVANCE_TO() {
+        $html = $source = '<script><!--</script>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script><!--</script >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script >',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>text<!--</script >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script >',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script><!--' . '</script ';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</script ',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</script ',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script><!--' . '</script/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script/>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script>text<!--' . '</script/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'script',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</script/>',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+                9 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<script><!--' . '</script/';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</script/',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</script/',
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEndTagOpenState',
+                3 => 'ScriptDataEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testRCDATA_FLUSH_AND_ADVANCE_TO() {
+        $html = $source = '<textarea></textarea>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'textarea',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</textarea>',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea></textarea >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'textarea',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</textarea >',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+                11 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea>text</textarea >';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'textarea',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</textarea >',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+                11 => 'BeforeAttributeNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea>' . '</textarea ';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</textarea ',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</textarea ',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea>' . '</textarea/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'textarea',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</textarea/>',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+                11 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea>text' . '</textarea/>';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndTag',
+            'data' => 'textarea',
+            'selfClosing' => true,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => '</textarea/>',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+                11 => 'SelfClosingStartTagState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $html = $source = '<textarea>' . '</textarea/';
+        $SegmentedString = new SegmentedString($html);
+        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $HTMLTokenizer->tokenizer();
+        $actual = $HTMLTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'EndOfFile',
+            'data' => '</textarea/',
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => '</textarea/',
+            'state' => array(
+                0 => 'RCDATAState',
+                1 => 'RCDATALessThanSignState',
+                2 => 'RCDATAEndTagOpenState',
+                3 => 'RCDATAEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testScriptDataEscaped() {
+        $source = '<script>';
+        $html = '<!- ';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!-- ';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!---';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!-- <';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!-- -<';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedState',
+                6 => 'ScriptDataEscapedDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!-- -_';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedState',
+                6 => 'ScriptDataEscapedDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<A';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</A';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataEscapedEndTagOpenState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</a';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataEscapedEndTagOpenState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</aA';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataEscapedEndTagOpenState',
+                7 => 'ScriptDataEscapedEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</aa';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataEscapedEndTagOpenState',
+                7 => 'ScriptDataEscapedEndTagNameState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--</scripta>';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataEscapedEndTagOpenState',
+                7 => 'ScriptDataEscapedEndTagNameState',
+                13 => 'ScriptDataEscapedState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<scripta ';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<scriptA';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script><';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>a';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>-<';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>-a';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>---';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>--<';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>-->';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => false,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>--a';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>--</';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+                15 => 'ScriptDataDoubleEscapedLessThanSignState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>--</>';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+                15 => 'ScriptDataDoubleEscapedLessThanSignState',
+                16 => 'ScriptDataDoubleEscapeEndState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = '<!--<script>--</scRipt>';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $actual = array_pop($actual);
+        $expect = array(
+            'type' => 'Character',
+            'data' => $html,
+            'selfClosing' => false,
+            'attributes' => array(),
+            'parseError' => true,
+            'html' => $html,
+            'state' => array(
+                0 => 'ScriptDataState',
+                1 => 'ScriptDataLessThanSignState',
+                2 => 'ScriptDataEscapeStartState',
+                3 => 'ScriptDataEscapeStartDashState',
+                4 => 'ScriptDataEscapedDashDashState',
+                5 => 'ScriptDataEscapedLessThanSignState',
+                6 => 'ScriptDataDoubleEscapeStartState',
+                12 => 'ScriptDataDoubleEscapedState',
+                13 => 'ScriptDataDoubleEscapedDashState',
+                14 => 'ScriptDataDoubleEscapedDashDashState',
+                15 => 'ScriptDataDoubleEscapedLessThanSignState',
+                16 => 'ScriptDataDoubleEscapeEndState',
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testTokenSplit() {
+        $source = '<script>';
+        $html = 'aa</script>';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'aa',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'aa',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</script>',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    1 => 'ScriptDataLessThanSignState',
+                    2 => 'ScriptDataEndTagOpenState',
+                    3 => 'ScriptDataEndTagNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>';
+        $html = 'a</aa</script/>';
+        $source .= $html;
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'script',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<script>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'a</aa',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'a</aa',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    2 => 'ScriptDataLessThanSignState',
+                    3 => 'ScriptDataEndTagOpenState',
+                    4 => 'ScriptDataEndTagNameState',
+                ),
+            ),
+            2 => array(
+                'type' => 'EndTag',
+                'data' => 'script',
+                'selfClosing' => true,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '</script/>',
+                'state' => array(
+                    0 => 'ScriptDataState',
+                    1 => 'ScriptDataLessThanSignState',
+                    2 => 'ScriptDataEndTagOpenState',
+                    3 => 'ScriptDataEndTagNameState',
+                    9 => 'SelfClosingStartTagState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testAttribute() {
+        $source = '<p i/>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => true,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'i',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    5 => 'SelfClosingStartTagState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p i>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'i',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p i">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'i"',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p i  =>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'i',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    5 => 'AfterAttributeNameState',
+                    7 => 'BeforeAttributeValueState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p i  >';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'i',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    5 => 'AfterAttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p id  TITLE>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+                    1 => array(
+                        'name' => 'title',
+                        'value' => '',
+                        'quoted' => false,
+                    ),
+
+                ),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'AfterAttributeNameState',
+                    8 => 'AttributeNameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p id= &>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '&',
+                        'quoted' => false,
+                    ),
+                ),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueUnquotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p id=\'&\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '&',
+                        'quoted' => '\'',
+                    ),
+                ),
+                'parseError' => false,
+                'html' => '<p id=\'&\'>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueSingleQuotedState',
+                    9 => 'AfterAttributeValueQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<p id=\'&\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'StartTag',
+                'data' => 'p',
+                'selfClosing' => false,
+                'attributes' => array(
+                    0 => array(
+                        'name' => 'id',
+                        'value' => '&',
+                        'quoted' => '\'',
+                    ),
+                ),
+                'parseError' => false,
+                'html' => '<p id=\'&\'>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'TagNameState',
+                    3 => 'BeforeAttributeNameState',
+                    4 => 'AttributeNameState',
+                    6 => 'BeforeAttributeValueState',
+                    7 => 'AttributeValueSingleQuotedState',
+                    9 => 'AfterAttributeValueQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testMarkupDeclarationOpenState() {
+        $source = '<!';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<!',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+        $source = '<!D';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Uninitialized',
+                'data' => '<!',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'D',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'D',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DenoughCharacters>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => '<!DenoughCharacters>',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => '<!DenoughCharacters>',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'ContinueBogusCommentState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<![';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Uninitialized',
+                'data' => '<!',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '[',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '[',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<![';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Uninitialized',
+                'data' => '<!',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => '[',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '[',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testCommentState() {
+        $source = '<!---a';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    4 => 'CommentStartState',
+                    5 => 'CommentStartDashState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!-- -a';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    4 => 'CommentStartState',
+                    5 => 'CommentState',
+                    6 => 'CommentEndDashState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!-- --!-';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    4 => 'CommentStartState',
+                    5 => 'CommentState',
+                    6 => 'CommentEndDashState',
+                    7 => 'CommentEndState',
+                    8 => 'CommentEndBangState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!-- --!>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    4 => 'CommentStartState',
+                    5 => 'CommentState',
+                    6 => 'CommentEndDashState',
+                    7 => 'CommentEndState',
+                    8 => 'CommentEndBangState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!-- --!a';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Comment',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    4 => 'CommentStartState',
+                    5 => 'CommentState',
+                    6 => 'CommentEndDashState',
+                    7 => 'CommentEndState',
+                    8 => 'CommentEndBangState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testDOCTYPEState() {
+        $source = '<!DOCTYPE  ';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE html  >';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE html P';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!DOCTYPE html ',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'P',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'P',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE html S';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => '<!DOCTYPE html ',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!DOCTYPE html ',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                ),
+            ),
+            1 => array(
+                'type' => 'Character',
+                'data' => 'S',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => 'S',
+                'state' => array(
+                    0 => 'DataState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE html PUBLIC  ';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML PUBLIC \'\'';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML PUBLIC \'a';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML PUBLIC \'\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                    24 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML PUBLIC ""  >';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    24 => 'AfterDOCTYPEPublicIdentifierState',
+                    25 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML PUBLIC "" \'\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    24 => 'AfterDOCTYPEPublicIdentifierState',
+                    25 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    26 => 'DOCTYPESystemIdentifierSingleQuotedState',
+                    27 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML SYSTEM  >';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPESystemKeywordState',
+                    22 => 'BeforeDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML SYSTEM \'a\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPESystemKeywordState',
+                    22 => 'BeforeDOCTYPESystemIdentifierState',
+                    23 => 'DOCTYPESystemIdentifierSingleQuotedState',
+                    25 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML SYSTEM ""  >';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPESystemKeywordState',
+                    22 => 'BeforeDOCTYPESystemIdentifierState',
+                    23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    24 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!DOCTYPE HTML SYSTEM "" \'\'>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => true,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPESystemKeywordState',
+                    22 => 'BeforeDOCTYPESystemIdentifierState',
+                    23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    24 => 'AfterDOCTYPESystemIdentifierState',
+                    26 => 'BogusDOCTYPEState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testCDATASectionState() {
+        $source = '<![CDATA[>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'CDATASectionState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<![CDATA[]>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'CDATASectionState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        $source = '<![CDATA[ //]]a';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'Character',
+                'data' => $source,
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'CDATASectionState',
+                    13 => 'CDATASectionRightSquareBracketState',
+                    14 => 'CDATASectionState',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+    }
+
 }
