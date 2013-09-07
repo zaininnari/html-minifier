@@ -117,20 +117,20 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
     }
 
     public function testDoctype() {
-
-        $html = '<!DOCTYPE html>';
-        $SegmentedString = new SegmentedString($html);
-        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
-        $HTMLTokenizer->tokenizer();
-        $actual = $HTMLTokenizer->getTokensAsArray();
+        // HTML 5
+        $source = '<!DOCTYPE html>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html>',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '<!DOCTYPE html>',
+                'html' => $source,
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -139,24 +139,158 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     10 => 'BeforeDOCTYPENameState',
                     11 => 'DOCTYPENameState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
 
-
-        $html = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">';
-        $SegmentedString = new SegmentedString($html);
-        $HTMLTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
-        $HTMLTokenizer->tokenizer();
-        $actual = $HTMLTokenizer->getTokensAsArray();
+        // HTML 4.01 Strict
+        $source = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+                'html' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    49 => 'AfterDOCTYPEPublicIdentifierState',
+                    50 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    51 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    89 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD HTML 4.01//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/html4/strict.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // HTML 4.01 Transitional
+        $source = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    62 => 'AfterDOCTYPEPublicIdentifierState',
+                    63 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    64 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    101 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD HTML 4.01 Transitional//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/html4/loose.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'LimitedQuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // HTML 4.01 Frameset
+        $source = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    58 => 'AfterDOCTYPEPublicIdentifierState',
+                    59 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    60 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    100 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD HTML 4.01 Frameset//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/html4/frameset.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'LimitedQuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // XHTML 1.0 Strict
+        $source = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -172,6 +306,254 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     57 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
                     58 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                     108 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD XHTML 1.0 Strict//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // XHTML 1.0 Transitional
+        $source = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    62 => 'AfterDOCTYPEPublicIdentifierState',
+                    63 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    64 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    120 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD XHTML 1.0 Transitional//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'LimitedQuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // XHTML 1.0 Frameset
+        $source = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    58 => 'AfterDOCTYPEPublicIdentifierState',
+                    59 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    60 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    112 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD XHTML 1.0 Frameset//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'LimitedQuirksMode',
+                ),
+
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // XHTML 1.1
+        $source = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    49 => 'AfterDOCTYPEPublicIdentifierState',
+                    50 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
+                    51 => 'DOCTYPESystemIdentifierDoubleQuotedState',
+                    96 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '-//W3C//DTD XHTML 1.1//EN',
+                    'systemIdentifier' => 'http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
+
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // memo
+        $source = '<!DOCTYPE memo>';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'memo',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => $source,
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'QuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // +//Silmaril//dtd html Pro v0r11 19970101//
+        $source = '<!DOCTYPE HTML PUBLIC "+//Silmaril//dtd html Pro v0r11 19970101//">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!DOCTYPE HTML PUBLIC "+//Silmaril//dtd html Pro v0r11 19970101//">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    66 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '+//Silmaril//dtd html Pro v0r11 19970101//',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'QuirksMode',
+                ),
+            ),
+        );
+        $this->assertEquals($expect, $actual);
+
+        // -//W3C//DTD HTML 4.01 Transitional//
+        $source = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//">';
+        $SegmentedString = new SegmentedString($source);
+        $sourceTokenizer = new HTMLTokenizer($SegmentedString, array('debug' => true));
+        $sourceTokenizer->tokenizer();
+        $actual = $sourceTokenizer->getTokensAsArray();
+        $expect = array(
+            0 => array(
+                'type' => 'DOCTYPE',
+                'data' => 'html',
+                'selfClosing' => false,
+                'attributes' => array(),
+                'parseError' => false,
+                'html' => '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//">',
+                'state' => array(
+                    0 => 'DataState',
+                    1 => 'TagOpenState',
+                    2 => 'MarkupDeclarationOpenState',
+                    9 => 'DOCTYPEState',
+                    10 => 'BeforeDOCTYPENameState',
+                    11 => 'DOCTYPENameState',
+                    15 => 'AfterDOCTYPENameState',
+                    21 => 'AfterDOCTYPEPublicKeywordState',
+                    22 => 'BeforeDOCTYPEPublicIdentifierState',
+                    23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
+                    60 => 'AfterDOCTYPEPublicIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '-//W3C//DTD HTML 4.01 Transitional//',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -1579,7 +1961,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE',
+                'data' => '',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1588,6 +1970,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     0 => 'DataState',
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -1601,7 +1991,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE ',
+                'data' => '',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1611,6 +2001,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
                     9 => 'DOCTYPEState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -1624,7 +2022,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE P',
+                'data' => 'p',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1635,6 +2033,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     2 => 'MarkupDeclarationOpenState',
                     9 => 'DOCTYPEState',
                     10 => 'BeforeDOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -1648,7 +2054,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE P ',
+                'data' => 'p',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1660,6 +2066,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     9 => 'DOCTYPEState',
                     10 => 'BeforeDOCTYPENameState',
                     11 => 'DOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -1673,7 +2087,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1687,6 +2101,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1699,7 +2121,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC ',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1714,6 +2136,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1726,7 +2156,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC "',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1742,6 +2172,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1754,7 +2192,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC \'',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1770,6 +2208,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1782,7 +2228,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC ""',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1799,6 +2245,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1811,7 +2265,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC "" ',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1829,6 +2283,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1841,7 +2303,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1855,6 +2317,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1867,7 +2337,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM ',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1882,6 +2352,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1894,7 +2372,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM "',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1910,6 +2388,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPESystemKeywordState',
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1922,7 +2408,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM \'',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1938,6 +2424,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPESystemKeywordState',
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1950,7 +2444,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM ""',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1967,6 +2461,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -1979,7 +2481,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo SYSTEM "http://www.4dd.co.jp/DTD/memo.dtd"',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -1996,6 +2498,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => 'http://www.4dd.co.jp/DTD/memo.dtd',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2008,7 +2518,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE memo D"',
+                'data' => 'memo',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2022,6 +2532,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
                     16 => 'BogusDOCTYPEState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -2451,7 +2969,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE_',
+                'data' => '_',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2461,6 +2979,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
                     9 => 'BeforeDOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -2475,7 +3001,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE >',
+                'data' => '',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2486,6 +3012,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     2 => 'MarkupDeclarationOpenState',
                     9 => 'DOCTYPEState',
                     10 => 'BeforeDOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -2500,7 +3034,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC"',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2515,6 +3049,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2528,7 +3070,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC\'',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2543,6 +3085,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2556,7 +3106,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC>',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2571,6 +3121,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2584,7 +3142,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC_',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2599,6 +3157,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2612,7 +3178,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC >',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2628,6 +3194,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2641,7 +3215,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC _',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2657,6 +3231,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2670,7 +3252,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC ">',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2687,6 +3269,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2700,7 +3290,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE HTML PUBLIC \'>',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2717,6 +3307,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                     23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2730,7 +3328,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC """',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2748,6 +3346,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2761,7 +3367,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC ""\'',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2779,6 +3385,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2792,7 +3406,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC ""-',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2810,6 +3424,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPEPublicIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2823,7 +3445,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html PUBLIC "" -',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2842,6 +3464,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                     25 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2855,7 +3485,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM"',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2870,6 +3500,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2883,7 +3521,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM\'',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2898,6 +3536,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2911,7 +3557,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM>',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2926,6 +3572,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2939,7 +3593,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM-',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2954,6 +3608,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2967,7 +3629,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM >',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -2983,6 +3645,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPESystemKeywordState',
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -2996,7 +3666,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM -',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -3012,6 +3682,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPESystemKeywordState',
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -3025,7 +3703,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM ">',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -3042,6 +3720,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -3055,7 +3741,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM \'>',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -3072,6 +3758,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                     23 => 'DOCTYPESystemIdentifierSingleQuotedState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -3085,7 +3779,7 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html SYSTEM ""-',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
@@ -3102,6 +3796,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     22 => 'BeforeDOCTYPESystemIdentifierState',
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
                 ),
             ),
         );
@@ -5922,17 +6624,25 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => '',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE  ',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
                     2 => 'MarkupDeclarationOpenState',
                     9 => 'DOCTYPEState',
                     10 => 'BeforeDOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -5946,11 +6656,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE html  >',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -5959,6 +6669,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     10 => 'BeforeDOCTYPENameState',
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
                 ),
             ),
         );
@@ -5972,11 +6690,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html ',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
-                'parseError' => false,
-                'html' => '<!DOCTYPE html ',
+                'parseError' => true,
+                'html' => '<!DOCTYPE html P',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -5986,16 +6704,13 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
                 ),
-            ),
-            1 => array(
-                'type' => 'Character',
-                'data' => 'P',
-                'selfClosing' => false,
-                'attributes' => array(),
-                'parseError' => false,
-                'html' => 'P',
-                'state' => array(
-                    0 => 'DataState',
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6009,11 +6724,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => '<!DOCTYPE html ',
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
-                'parseError' => false,
-                'html' => '<!DOCTYPE html ',
+                'parseError' => true,
+                'html' => '<!DOCTYPE html S',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6023,16 +6738,13 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     11 => 'DOCTYPENameState',
                     15 => 'AfterDOCTYPENameState',
                 ),
-            ),
-            1 => array(
-                'type' => 'Character',
-                'data' => 'S',
-                'selfClosing' => false,
-                'attributes' => array(),
-                'parseError' => false,
-                'html' => 'S',
-                'state' => array(
-                    0 => 'DataState',
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6046,11 +6758,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE html PUBLIC  ',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6061,6 +6773,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6074,11 +6794,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML PUBLIC \'\'',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6090,6 +6810,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                     23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6103,11 +6831,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML PUBLIC \'a',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6119,6 +6847,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     21 => 'AfterDOCTYPEPublicKeywordState',
                     22 => 'BeforeDOCTYPEPublicIdentifierState',
                     23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => 'a',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6132,11 +6868,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML PUBLIC \'\'>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6150,6 +6886,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPEPublicIdentifierSingleQuotedState',
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -6162,11 +6906,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML PUBLIC ""  >',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6181,6 +6925,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     24 => 'AfterDOCTYPEPublicIdentifierState',
                     25 => 'BetweenDOCTYPEPublicAndSystemIdentifiersState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -6193,11 +6945,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML PUBLIC "" \'\'>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6214,6 +6966,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     26 => 'DOCTYPESystemIdentifierSingleQuotedState',
                     27 => 'AfterDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => true,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -6226,11 +6986,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML SYSTEM  >',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6241,6 +7001,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     15 => 'AfterDOCTYPENameState',
                     21 => 'AfterDOCTYPESystemKeywordState',
                     22 => 'BeforeDOCTYPESystemIdentifierState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => false,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => true,
+                    'mode' => 'QuirksMode',
                 ),
             ),
         );
@@ -6254,11 +7022,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML SYSTEM \'a\'>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6272,6 +7040,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPESystemIdentifierSingleQuotedState',
                     25 => 'AfterDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => 'a',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -6284,11 +7060,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => false,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML SYSTEM ""  >',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6302,6 +7078,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPESystemIdentifierState',
                 ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
+                ),
             ),
         );
         $this->assertEquals($expect, $actual);
@@ -6314,11 +7098,11 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
         $expect = array(
             0 => array(
                 'type' => 'DOCTYPE',
-                'data' => $source,
+                'data' => 'html',
                 'selfClosing' => false,
                 'attributes' => array(),
                 'parseError' => true,
-                'html' => $source,
+                'html' => '<!DOCTYPE HTML SYSTEM "" \'\'>',
                 'state' => array(
                     0 => 'DataState',
                     1 => 'TagOpenState',
@@ -6332,6 +7116,14 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
                     23 => 'DOCTYPESystemIdentifierDoubleQuotedState',
                     24 => 'AfterDOCTYPESystemIdentifierState',
                     26 => 'BogusDOCTYPEState',
+                ),
+                'doctypeData' => array(
+                    'hasPublicIdentifier' => false,
+                    'hasSystemIdentifier' => true,
+                    'publicIdentifier' => '',
+                    'systemIdentifier' => '',
+                    'forceQuirks' => false,
+                    'mode' => 'NoQuirksMode',
                 ),
             ),
         );
@@ -6409,6 +7201,9 @@ class HTMLTokenizerTest extends \PHPUnit_Framework_TestCase {
             ),
         );
         $this->assertEquals($expect, $actual);
+    }
+
+    public function testParseDOCTYPE() {
     }
 
 }

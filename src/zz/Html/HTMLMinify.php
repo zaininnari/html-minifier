@@ -12,6 +12,9 @@ class HTMLMinify {
     const REMOVE_WHITE_SPACE = 1;
     const REMOVE_SPACE_ONLY = 2;
 
+    const DOCTYPE_HTML4 = 'html4';
+    const DOCTYPE_HTML5 = 'html5';
+
     /**
      * @var null|string
      */
@@ -92,6 +95,9 @@ class HTMLMinify {
      */
     protected function _buildHtml(HTMLToken $token) {
         switch ($token->getType()) {
+            case HTMLToken::DOCTYPE:
+                $html = $token->getHtmlOrigin();
+                break;
             case HTMLToken::StartTag:
                 $selfClosing = $token->hasSelfClosing() ? '/' : '';
                 if ($selfClosing) {

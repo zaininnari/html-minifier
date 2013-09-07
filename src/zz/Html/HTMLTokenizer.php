@@ -251,7 +251,6 @@ class HTMLTokenizer {
         switch ($this->_Token->getType()) {
             case HTMLToken::Uninitialized:
             case HTMLToken::EndOfFile:
-            case HTMLToken::DOCTYPE:
             case HTMLToken::Character:
             case HTMLToken::Comment:
                 $this->_Token->setData($html);
@@ -261,6 +260,8 @@ class HTMLTokenizer {
         if ($this->_debug) {
             $this->_Token->setHtmlOrigin($html);
             $this->_Token->setState($compactBuffer);
+        } else if ($this->_Token->getType() === HTMLToken::DOCTYPE) {
+            $this->_Token->setHtmlOrigin($html);
         }
         $this->_Token->clean();
     }
@@ -1321,25 +1322,30 @@ class HTMLTokenizer {
                                 $this->addState();
                                 $this->_HTML_SWITCH_TO(static::AfterDOCTYPEPublicKeywordState);
                                 $this->_SegmentedString->read(strlen($publicString));
-                            } else if ($result === SegmentedString::NotEnoughCharacters) {
-                                $this->addState();
-                                return $this->_haveBufferedCharacterToken();
+                                continue;
                             }
+                            // @todo
+                            //  else if ($result === SegmentedString::NotEnoughCharacters) {
+                            //  $this->addState();
+                            //  return $this->_haveBufferedCharacterToken();
+                            //  }
                         } else if ($char === 'S' || $char === 's') {
                             $result = $source->lookAheadIgnoringCase($systemString);
                             if ($result === SegmentedString::DidMatch) {
                                 $this->addState();
                                 $this->_HTML_SWITCH_TO(static::AfterDOCTYPESystemKeywordState);
                                 $this->_SegmentedString->read(strlen($systemString));
-                            } else if ($result === SegmentedString::NotEnoughCharacters) {
-                                $this->addState();
-                                return $this->_haveBufferedCharacterToken();
+                                continue;
                             }
-                        } else {
-                            $this->_parseError();
-                            $this->_Token->setForceQuirks();
-                            $this->_HTML_ADVANCE_TO(static::BogusDOCTYPEState);
+                            // @todo
+                            // else if ($result === SegmentedString::NotEnoughCharacters) {
+                            // $this->addState();
+                            // return $this->_haveBufferedCharacterToken();
+                            // }
                         }
+                        $this->_parseError();
+                        $this->_Token->setForceQuirks();
+                        $this->_HTML_ADVANCE_TO(static::BogusDOCTYPEState);
                     }
                     break;
 

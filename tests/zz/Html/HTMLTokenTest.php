@@ -73,6 +73,22 @@ class HTMLTokenTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(null, $Token->forceQuirks());
     }
 
+    public function testHasParseError() {
+        $Token = new HTMLToken();
+        $this->assertEquals(false, $Token->hasParseError());
+    }
+
+    public function testGetDoctypeData() {
+        $Token = new HTMLToken();
+        $this->assertEquals(array(
+            'hasPublicIdentifier' => false,
+            'hasSystemIdentifier' => false,
+            'publicIdentifier' => '',
+            'systemIdentifier' => '',
+            'forceQuirks' => false,
+        ), $Token->getDoctypeData());
+    }
+
     public function testAttributeQuoted() {
         $html = '<img id=id class=\'class\' src="img.png" />';
         $SegmentedString = new SegmentedString($html);

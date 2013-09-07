@@ -31,6 +31,13 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         );
     }
 
+    public function testMinifyDOCTYPE() {
+        $source = '<!DOCTYPE html>';
+        $expect = '<!DOCTYPE html>';
+        $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
+    }
+
     public function testRemoveWhitespaceInCharacter() {
         $source = ' char';
         $expect = 'char';
@@ -287,7 +294,7 @@ javascript
 
     public function testTagInvalid() {
         $source = '<DIV>    end' . chr(10) . '    </';
-        $expect = '<div> end'.chr(10).'</';
+        $expect = '<div> end' . chr(10) . '</';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
