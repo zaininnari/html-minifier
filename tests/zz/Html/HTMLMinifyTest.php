@@ -38,6 +38,23 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
     }
 
+    public function testExcludeComment() {
+        $source = '<!--nocache-->remove<!--/nocache-->';
+        $expect = 'remove';
+        $actual = HTMLMinify::minify($source);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!--nocache-->no remove<!--/nocache-->';
+        $expect = '<!--nocache-->no remove';
+        $actual = HTMLMinify::minify($source, array('excludeComment' => array('/<!--nocache-->/')));
+        $this->assertEquals($expect, $actual);
+
+        $source = '<!--nocache-->no remove<!--/nocache-->';
+        $expect = '<!--nocache-->no remove<!--/nocache-->';
+        $actual = HTMLMinify::minify($source, array('excludeComment' => array('/<!--\/?nocache-->/')));
+        $this->assertEquals($expect, $actual);
+    }
+
     public function testRemoveWhitespaceInCharacter() {
         $source = ' char';
         $expect = 'char';
@@ -79,7 +96,6 @@ ccc
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
     }
-
 
     public function testRemoveWhitespaceInTag() {
         $source = '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >';

@@ -52,6 +52,7 @@ class HTMLMinify {
             'startTagBeforeSlash' => static::REMOVE_WHITE_SPACE,
             'comment' => true,
             'deleteDuplicateAttribute' => true,
+            'excludeComment' => array(),
         );
         return $options + $_options;
     }
@@ -162,6 +163,8 @@ class HTMLMinify {
     protected function removeWhitespaceFromComment() {
         $tokens = $this->tokens;
 
+        $regexps = $this->options['excludeComment'];
+
         for ($i = 0, $len = count($tokens); $i < $len; $i++) {
             $token = $tokens[$i];
             $type = $token->getType();
@@ -177,6 +180,15 @@ class HTMLMinify {
 
             if ($type !== HTMLToken::Comment) {
                 continue;
+            }
+
+            if ($regexps) {
+                $comment = $token->getData();
+                foreach ($regexps as $regexp) {
+                    if (preg_match($regexp, $comment)) {
+                        continue 2;
+                    }
+                }
             }
 
             unset($tokens[$i]);
@@ -202,7 +214,6 @@ class HTMLMinify {
             $len = count($tokens);
             $tokens = array_merge($tokens, array());
             $i--;
-
         }
         $tokens = array_merge($tokens, array());
         $this->tokens = $tokens;
