@@ -33,12 +33,14 @@ php composer.phar install
 <?php
 require 'vendor/autoload.php';
 
+use zz\Html\HTMLMinify;
+
 $html = '<div>
     <p>
         text
     </p> 
-</div>'
-$minify = zz\Html\HTMLMinify::minify($html);
+</div>';
+$minify = HTMLMinify::minify($html);
 ```
 
 output html
