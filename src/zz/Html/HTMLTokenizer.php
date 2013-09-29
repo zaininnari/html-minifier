@@ -286,14 +286,14 @@ class HTMLTokenizer {
                 case static::DataState:
                     if ($char === '&') {
                         $this->_HTML_ADVANCE_TO(static::CharacterReferenceInDataState);
-                    } elseif ($char === '<') {
+                    } else if ($char === '<') {
                         if ($this->_Token->getType() === HTMLToken::Character) {
                             // We have a bunch of character tokens queued up that we
                             // are emitting lazily here.
                             return true;
                         }
                         $this->_HTML_ADVANCE_TO(static::TagOpenState);
-                    } elseif ($char === static::kEndOfFileMarker) {
+                    } else if ($char === static::kEndOfFileMarker) {
                         return $this->_emitEndOfFile();
                     } else {
                         $this->_bufferCharacter($char);
@@ -383,7 +383,7 @@ class HTMLTokenizer {
                     if ($this->_isASCIIUpper($char)) {
                         $this->_Token->beginEndTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
-                    } elseif ($this->_isASCIILower($char)) {
+                    } else if ($this->_isASCIILower($char)) {
                         $this->_Token->beginEndTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
                     } else if ($char === '>') {
@@ -405,7 +405,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::BeforeAttributeNameState);
                     } else if ($char === '/') {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
-                    } elseif ($char === '>') {
+                    } else if ($char === '>') {
                         return $this->_emitAndResumeIn();
                     } else if ($this->_isASCIIUpper($char)) {
                         $this->_Token->appendToName(strtolower($char));

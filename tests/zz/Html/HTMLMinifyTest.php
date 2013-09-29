@@ -20,6 +20,21 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
     }
 
+    /**
+     * @dataProvider providerMinify
+     */
+    public function testMinifyOptimizeNewline($filebase) {
+
+        $dir = __DIR__ . DIRECTORY_SEPARATOR . $this->_test_file_dir . DIRECTORY_SEPARATOR;
+        $suffix = '.html';
+
+        $source = file_get_contents($dir . $filebase . $suffix);
+        $expect = rtrim(file_get_contents($dir . $filebase . '_optimize' . $suffix));
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+    }
+
     public function providerMinify() {
         return array(
             array(
@@ -29,6 +44,105 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
                 'base',
             ),
         );
+    }
+
+    public function testOptimizeTagNewline() {
+        // no option : no optimize
+        $source = chr(10) . chr(10) . '<div>' . chr(10) . chr(10) . '</div>' . chr(10) . chr(10) . '<div></div>' . chr(10) . chr(10);
+        $expect = '<div>' . chr(10) . '</div>' . chr(10) . '<div></div>';
+        $option = array();
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        // optimize option NO
+        $source = '<div></div>' . chr(10) . '<div></div>' . chr(10) . '<div></div>';
+        $expect = '<div></div>' . chr(10) . '<div></div>' . chr(10) . '<div></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_SIMPLE);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        // optimize option YES
+        $source = chr(10) . '<!doctype html>' . chr(10) . '<html></html>';
+        $expect = '<!doctype html><html></html>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = chr(10) . '<div></div>' . chr(10) . '<div>' . chr(10) . '</div>' . chr(10);
+        $expect = '<div></div><div></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<div>A' . chr(10) . chr(10) . 'Z</div>' . chr(10) . chr(10) . '<div>' . chr(10) . '</div>' . chr(10);
+        $expect = '<div>A' . chr(10) . 'Z</div><div></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<i>A' . chr(10) . chr(10) . 'Z</i>' . chr(10) . chr(10) . '<i>' . chr(10) . '</i>' . chr(10);
+        $expect = '<i>A' . chr(10) . 'Z</i>' . chr(10) . '<i>' . chr(10) . '</i>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+        $source = '<div> <img> <div> </div> <img> </div>';
+        $expect = '<div><img><div></div><img></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<div> <i> char </i> <div> </div>' . chr(10) . '<em>' . chr(10) . 'char' . chr(10) . '</em>' . chr(10) . '</div>';
+        $expect = '<div><i> char </i><div></div><em>' . chr(10) . 'char' . chr(10) . '</em></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<div> <unknown> <div> </div> <unknown> </unknown> </div>';
+        $expect = '<div><unknown><div></div><unknown> </unknown></div>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        // optimize option YES, but no optimize
+        // pre, textarea, script and style : no modify
+        // script and style : try trim
+        $source = '<pre>' . chr(10) . '<div></div>' . chr(10) . '</pre>';
+        $expect = '<pre>' . chr(10) . '<div></div>' . chr(10) . '</pre>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<textarea>' . chr(10) . '<div></div>' . chr(10) . '</textarea>';
+        $expect = '<textarea>' . chr(10) . '<div></div>' . chr(10) . '</textarea>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<script>' . chr(10) . 'var a = 1;' . chr(10) . '</script>';
+        $expect = '<script>var a = 1;</script>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<style>' . chr(10) . '.selector{color : red;}' . chr(10) . '</style>';
+        $expect = '<style>.selector{color : red;}</style>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        // nest
+        $source = '<textarea>' . chr(10) . '<pre>' . chr(10) . '<div></div>' . chr(10) . '</pre>' . chr(10) . '</textarea>';
+        $expect = '<textarea>' . chr(10) . '<pre>' . chr(10) . '<div></div>' . chr(10) . '</pre>' . chr(10) . '</textarea>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        // conditionalComment
+        $source = '<!-- HTML -->' . chr(10) . '<!--[if expression]>' . chr(10) . ' HTML ' . chr(10) . '<![endif]-->' . chr(10) . '<![if expression]>' . chr(10) . ' HTML ' . chr(10) . '<![endif]>';
+        $expect = '<!--[if expression]>' . chr(10) . ' HTML ' . chr(10) . '<![endif]--><![if expression]>HTML<![endif]>';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
     }
 
     public function testMinifyDOCTYPE() {

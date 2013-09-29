@@ -11,10 +11,111 @@ Requirements
 - Any flavor of PHP 5.3 should do
 - [optional] PHPUnit 3.5+ to execute the test suite (phpunit --version)
 
+Use
+---
+Create composer.json.
+[composer.json]
+```sh
+{
+    "require": {
+        "zaininnari/html-minifier": "*"
+    }
+}
+```
+
+Download composer.phar and install.
+```sh
+curl -sS https://getcomposer.org/installer | php
+php composer.phar install
+```
+
+```php
+<?php
+require 'vendor/autoload.php';
+
+$html = '<div>
+    <p>
+        text
+    </p> 
+</div>'
+$minify = zz\Html\HTMLMinify::minify($html);
+```
+
+output html
+```HTML
+<div>
+<p>
+text
+</p> 
+</div>
+```
+
+Option
+------
+
+### optimizationLevel
+#### OPTIMIZATION_SIMPLE(default)
+
+Replace many whitespace to a single whitespace. 
+This option leave a new line of one.
+
+[input]
+```HTML
+<section>
+    <h1>Example of paragraphs</h1>
+    This is the <em>first</em> paragraph in this example.
+    <p>This is the second.</p>
+    <!-- This is not a paragraph. -->
+    <!--[if expression]> HTML <![endif]-->
+    <![if expression]> HTML <![endif]>
+</section>
+```
+
+[output]
+```HTML
+<section>
+<h1>Example of paragraphs</h1>
+This is the <em>first</em> paragraph in this example.
+<p>This is the second.</p>
+<!--[if expression]> HTML <![endif]-->
+<![if expression]> HTML <![endif]>
+</section>
+```
+
+#### OPTIMIZATION_ADVANCED
+
+Remove the whitespace of all as much as possible.
+
+- Remove whitespace
+    - between block element and block element
+    - between block element and inline element
+    - run trim in style, script and downlevel-revealed conditional comment
+    - **[future]** consider comments
+- Preserve whitespace
+    - between inline element and inline element
+
+[input]
+```HTML
+<section>
+    <h1>Example of paragraphs</h1>
+    This is the <em>first</em> paragraph in this example.
+    <p>This is the second.</p>
+    <!-- This is not a paragraph. -->
+    <!--[if expression]> HTML <![endif]-->
+    <![if expression]> HTML <![endif]>
+</section>
+```
+
+[output]
+```HTML
+<section><h1>Example of paragraphs</h1>This is the<em>first</em>paragraph in this example.<p>This is the second.</p><!--[if expression]> HTML <![endif]--><![if expression]>HTML<![endif]></section>
+```
+
 Author
 ------
 
-zaininnari
+zaininnari  
+http://www.zay.jp/
 
 Original source
 
