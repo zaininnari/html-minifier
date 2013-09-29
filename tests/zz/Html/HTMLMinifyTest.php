@@ -86,7 +86,7 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $actual = HTMLMinify::minify($source, $option);
         $this->assertEquals($expect, $actual);
         $source = '<div> <img> <div> </div> <img> </div>';
-        $expect = '<div><img><div></div><img></div>';
+        $expect = '<div><img /><div></div><img /></div>';
         $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
         $actual = HTMLMinify::minify($source, $option);
         $this->assertEquals($expect, $actual);
@@ -143,6 +143,82 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
         $actual = HTMLMinify::minify($source, $option);
         $this->assertEquals($expect, $actual);
+
+        $source = '<div><div>' . chr(10) . 'a' . chr(10) . '<!--[if expression]>' . chr(10) . ' HTML ' . chr(10) . '<![endif]-->';
+        $expect = '<div><div>a<!--[if expression]>' . chr(10) . ' HTML ' . chr(10) . '<![endif]-->';
+        $option = array('optimizationLevel' => HTMLMinify::OPTIMIZATION_ADVANCED);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testOptimizeByOptionDoctype() {
+        $source = '<br><br/><br />';
+        $expect = '<br /><br /><br />';
+        $option = array();
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br><br><br>';
+        $option = array('doctype' => HTMLMinify::DOCTYPE_HTML4);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br /><br /><br />';
+        $option = array('doctype' => HTMLMinify::DOCTYPE_XHTML1);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br><br><br>';
+        $option = array('doctype' => HTMLMinify::DOCTYPE_HTML5);
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+    }
+
+    public function testOptimizeByOptionEmptyElement() {
+        $source = '<br><br/><br />';
+        $expect = '<br /><br /><br />';
+        $option = array();
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br><br><br>';
+        $option = array(
+            'emptyElementAddSlash' => false,
+            'emptyElementAddWhitespaceBeforeSlash' => false,
+        );
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br><br><br>';
+        $option = array(
+            'emptyElementAddSlash' => false,
+            'emptyElementAddWhitespaceBeforeSlash' => true,
+        );
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br/><br/><br/>';
+        $option = array(
+            'emptyElementAddSlash' => true,
+            'emptyElementAddWhitespaceBeforeSlash' => false,
+        );
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
+
+        $source = '<br><br/><br />';
+        $expect = '<br /><br /><br />';
+        $option = array(
+            'emptyElementAddSlash' => true,
+            'emptyElementAddWhitespaceBeforeSlash' => true,
+        );
+        $actual = HTMLMinify::minify($source, $option);
+        $this->assertEquals($expect, $actual);
     }
 
     public function testMinifyDOCTYPE() {
@@ -181,12 +257,12 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
 
         $source = '<br>    <br>';
-        $expect = '<br> <br>';
+        $expect = '<br /> <br />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
         $source = 'char <br> ';
-        $expect = 'char <br>';
+        $expect = 'char <br />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
@@ -218,7 +294,7 @@ ccc
         $this->assertEquals($expect, $actual);
 
         $source = '<img src="" />';
-        $expect = '<img src=""/>';
+        $expect = '<img src="" />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
@@ -229,20 +305,20 @@ ccc
 
         $source = '<link
 rel="Shortcut Icon"/>';
-        $expect = '<link rel="Shortcut Icon"/>';
+        $expect = '<link rel="Shortcut Icon" />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
         $source = '<link
 
  rel="Shortcut Icon"/>';
-        $expect = '<link rel="Shortcut Icon"/>';
+        $expect = '<link rel="Shortcut Icon" />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
         $source = '<link rel="Shortcut Icon"
 type="image/x-icon"/>';
-        $expect = '<link rel="Shortcut Icon" type="image/x-icon"/>';
+        $expect = '<link rel="Shortcut Icon" type="image/x-icon" />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
@@ -255,8 +331,8 @@ type="image/x-icon"/>';
 		type="application/rss+xml"
 		title="RSS"
 		href="http://www.example.com/zengarden.xml" />';
-        $expect = '<link rel="Shortcut Icon" type="image/x-icon" href="http://www.example.com/favicon.ico"/>
-<link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.example.com/zengarden.xml"/>';
+        $expect = '<link rel="Shortcut Icon" type="image/x-icon" href="http://www.example.com/favicon.ico" />
+<link rel="alternate" type="application/rss+xml" title="RSS" href="http://www.example.com/zengarden.xml" />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
 
@@ -447,7 +523,7 @@ javascript
 
         $source = '<p title="title1" title="title2" class="class1" class="class2">';
         $expect = '<p title="title1" title="title2" class="class1" class="class2">';
-        $actual = HTMLMinify::minify($source, array('deleteDuplicateAttribute' => false));
+        $actual = HTMLMinify::minify($source, array('removeDuplicateAttribute' => false));
         $this->assertEquals($expect, $actual);
     }
 
@@ -463,7 +539,7 @@ javascript
 
     public function testAttributeQuoted() {
         $source = '<img id=id class=\'class\' src="img.png" title />';
-        $expect = '<img id=id class=\'class\' src="img.png" title/>';
+        $expect = '<img id=id class=\'class\' src="img.png" title />';
         $actual = HTMLMinify::minify($source);
         $this->assertEquals($expect, $actual);
     }

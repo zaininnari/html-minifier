@@ -10,10 +10,8 @@ namespace zz\Html;
 class HTMLMinify {
     const ENCODING = 'UTF-8';
 
-    const REMOVE_WHITE_SPACE = 1;
-    const REMOVE_SPACE_ONLY = 2;
-
-    const DOCTYPE_HTML4 = 'html4';
+    const DOCTYPE_HTML4 = 'HTML4.01';
+    const DOCTYPE_XHTML1 = 'XHTML1.0';
     const DOCTYPE_HTML5 = 'html5';
 
     const OPTIMIZATION_SIMPLE = 0;
@@ -164,6 +162,23 @@ class HTMLMinify {
         'xmp' => 'block',
     );
 
+    protected $emptyTag = array(
+        'area' => 'area',
+        'base' => 'base',
+        'basefont' => 'basefont',
+        'br' => 'br',
+        'col' => 'col',
+        'embed' => 'embed',
+        'frame' => 'frame',
+        'hr' => 'hr',
+        'img' => 'img',
+        'input' => 'input',
+        'isindex' => 'isindex',
+        'link' => 'link',
+        'meta' => 'meta',
+        'param' => 'param',
+    );
+
     /**
      * @param string $html
      * @param array $options
@@ -179,29 +194,6 @@ class HTMLMinify {
     }
 
     /**
-     * 'startTagBeforeSlash'
-     *     HTML4.01  no slash  : <img src=""><br>
-     *     XHTML1.0  add slash : <img src="" /><br />
-     *     HTML5     mixed OK  : <img src=""><br />
-     *
-     *     example : <img src="" /><br >
-     *     REMOVE_WHITE_SPACE(default) : <img src=""/><br>
-     *
-     * 'comment'
-     *     example : <!-- HTML --><!--[if expression]> HTML <![endif]--><![if expression]> HTML <![endif]>
-     *     true(default) => <!--[if expression]> HTML <![endif]--><![if expression]> HTML <![endif]>
-     *     false         => do nothing
-     *
-     * 'deleteDuplicateAttribute'
-     *     example : <img src="first.png" src="second.png">
-     *     true(default) => <img src="first.png">
-     *     false         => do nothing
-     *
-     * 'excludeComment'
-     *     example : <!--nocache-->content</--nocache-->
-     *     array()(default)             => content
-     *     array('/<!--\/?nocache-->/') => <!--nocache-->content</--nocache-->
-     *
      * 'optimizationLevel'
      *     OPTIMIZATION_SIMPLE(default)
      *         : replace many whitespace to a single whitespace
@@ -209,18 +201,79 @@ class HTMLMinify {
      *     OPTIMIZATION_ADVANCED
      *         : remove the white space of all as much as possible
      *
+     * 'emptyElementAddSlash'
+     *     HTML4.01  no slash  : <img src=""><br>
+     *     XHTML1.0  add slash : <img src="" /><br />
+     *     HTML5     mixed OK  : <img src=""><br />
+     *
+     *     example : <img src="">
+     *     true(default) : <img src=""/>
+     *     false         : <img src="">
+     *
+     * 'emptyElementAddWhitespaceBeforeSlash'
+     *     HTML4.01  no slash  : <img src=""><br>
+     *     XHTML1.0  add slash : <img src="" /><br />
+     *     HTML5     mixed OK  : <img src=""><br />
+     *
+     *     example : <img src=""/>
+     *     true(default) : <img src="" />
+     *     false         : <img src=""/>
+     *
+     * 'removeComment'
+     *     example : <!-- HTML --><!--[if expression]> HTML <![endif]--><![if expression]> HTML <![endif]>
+     *     true(default) => <!--[if expression]> HTML <![endif]--><![if expression]> HTML <![endif]>
+     *     false         => do nothing
+     *
+     * 'excludeComment'
+     *     example : <!--nocache-->content</--nocache-->
+     *     array()(default)             => content
+     *     array('/<!--\/?nocache-->/') => <!--nocache-->content</--nocache-->
+     *
+     * 'removeDuplicateAttribute'
+     *     example : <img src="first.png" src="second.png">
+     *     true(default) => <img src="first.png">
+     *     false         => do nothing
+     *
      * @param array $options
      * @return array
      */
     protected function options(Array $options) {
         $_options = array(
-            'startTagBeforeSlash' => static::REMOVE_WHITE_SPACE,
-            'comment' => true,
-            'deleteDuplicateAttribute' => true,
-            'excludeComment' => array(),
+            'doctype' => static::DOCTYPE_XHTML1,
             'optimizationLevel' => static::OPTIMIZATION_SIMPLE,
+            'emptyElementAddSlash' => false,
+            'emptyElementAddWhitespaceBeforeSlash' => false,
+            'removeComment' => true,
+            'excludeComment' => array(),
+            'removeDuplicateAttribute' => true,
         );
-        return $options + $_options;
+        $documentTypeOptions = array(
+            static::DOCTYPE_HTML4 => array(
+                'doctype' => static::DOCTYPE_HTML4,
+                'emptyElementAddSlash' => false,
+                'emptyElementAddWhitespaceBeforeSlash' => false,
+            ),
+            static::DOCTYPE_XHTML1 => array(
+                'doctype' => static::DOCTYPE_XHTML1,
+                'emptyElementAddSlash' => true,
+                'emptyElementAddWhitespaceBeforeSlash' => true,
+            ),
+            static::DOCTYPE_HTML5 => array(
+                'doctype' => static::DOCTYPE_HTML5,
+                'emptyElementAddSlash' => false,
+                'emptyElementAddWhitespaceBeforeSlash' => false,
+            ),
+        );
+
+        $documentTypeOption = $documentTypeOptions[static::DOCTYPE_XHTML1];
+        if (isset($options['doctype'])) {
+            $doctype = $options['doctype'];
+            if (isset($documentTypeOptions[$doctype])) {
+                $documentTypeOption = $documentTypeOptions[$doctype];
+            }
+        }
+
+        return $options + $documentTypeOption + $_options;
     }
 
     /**
@@ -267,10 +320,13 @@ class HTMLMinify {
                 $html = $token->getHtmlOrigin();
                 break;
             case HTMLToken::StartTag:
-                $selfClosing = $token->hasSelfClosing() ? '/' : '';
-                if ($selfClosing) {
-                    $selfClosing = ($this->options['startTagBeforeSlash'] === static::REMOVE_WHITE_SPACE ? '' : ' ') . $selfClosing;
+                $tagName = $token->getTagName();
+                $selfClosing = '';
+                if (isset($this->emptyTag[$tagName]) && $this->options['emptyElementAddSlash']) {
+                    $selfClosing = '/';
+                    $selfClosing = ($this->options['emptyElementAddWhitespaceBeforeSlash'] ? ' ' : '') . $selfClosing;
                 }
+
                 $attributes = $this->_buildAttributes($token);
                 $beforeAttributeSpace = '';
                 if ($attributes) {
@@ -319,10 +375,13 @@ class HTMLMinify {
     }
 
     protected function beforeFilter() {
-        $this->removeWhitespaceFromComment();
+        if ($this->options['removeComment']) {
+            $this->removeWhitespaceFromComment();
+        }
+
         $this->removeWhitespaceFromCharacter();
 
-        if ($this->options['deleteDuplicateAttribute']) {
+        if ($this->options['removeDuplicateAttribute']) {
             $this->optimizeStartTagAttributes();
         }
     }

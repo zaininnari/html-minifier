@@ -73,6 +73,11 @@ class HTMLTokenTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals(null, $Token->forceQuirks());
     }
 
+    public function testSelfClosing() {
+        $Token = new HTMLToken();
+        $this->assertEquals(false, $Token->hasSelfClosing());
+    }
+
     public function testHasParseError() {
         $Token = new HTMLToken();
         $this->assertEquals(false, $Token->hasParseError());
