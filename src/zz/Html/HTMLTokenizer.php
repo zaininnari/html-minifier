@@ -175,6 +175,7 @@ class HTMLTokenizer {
     }
 
     /**
+     * @throws \InvalidArgumentException
      * @return HtmlToken[]
      */
     public function tokenizer() {
@@ -195,12 +196,13 @@ class HTMLTokenizer {
             $startState = $this->_startState;
             // In other than `DataState`, `nextToken` return the type of Character, it contains the type of EndTag.
             // SegmentedString go back to the end of the type of Character position.
-            if ($this->_Token->getType() === HTMLToken::Character && $this->_bufferedEndTagName !== '' && ($startState === static::RAWTEXTState || $startState === static::RCDATAState || $startState === static::ScriptDataState)) {
+            $type = $this->_Token->getType();
+            if ($type === HTMLToken::Character && $this->_bufferedEndTagName !== '' && ($startState === static::RAWTEXTState || $startState === static::RCDATAState || $startState === static::ScriptDataState)) {
                 $length = strlen($this->_Token->getData());
 
                 // HTMLToken::Character
                 $this->_buffer = array_slice($this->_buffer, 0, $length);
-                $this->_compactBuffer($startPos, $startPos + $length);
+                $this->_compactBuffer($startPos, $startPos + $length, $type);
                 $token = $this->_Token;
                 $this->_tokens[] = $token;
 
@@ -208,11 +210,11 @@ class HTMLTokenizer {
                 $this->_SegmentedString->seek($startPos + $length);
                 $this->_state = $startState;
             } else {
-                $this->_compactBuffer($startPos, $endPos);
+                $this->_compactBuffer($startPos, $endPos, $type);
                 $token = $this->_Token;
                 $this->_tokens[] = $token;
                 // FIXME: The tokenizer should do this work for us.
-                if ($this->_Token->getType() === HTMLToken::StartTag) {
+                if ($type === HTMLToken::StartTag) {
                     $this->_updateStateFor($token->getTagName());
                 } else {
                     $this->_state = static::DataState;
@@ -239,7 +241,7 @@ class HTMLTokenizer {
         return $result;
     }
 
-    protected function _compactBuffer($startPos, $endPos) {
+    protected function _compactBuffer($startPos, $endPos, $type) {
         $compactBuffer = array();
         $before = static::kEndOfFileMarker;
         $html = $this->_SegmentedString->substr($startPos, $endPos - $startPos);
@@ -248,7 +250,7 @@ class HTMLTokenizer {
                 $before = $compactBuffer[$i] = $state;
             }
         }
-        switch ($this->_Token->getType()) {
+        switch ($type) {
             case HTMLToken::Uninitialized:
             case HTMLToken::EndOfFile:
             case HTMLToken::Character:
@@ -260,7 +262,7 @@ class HTMLTokenizer {
         if ($this->_debug) {
             $this->_Token->setHtmlOrigin($html);
             $this->_Token->setState($compactBuffer);
-        } else if ($this->_Token->getType() === HTMLToken::DOCTYPE) {
+        } else if ($type === HTMLToken::DOCTYPE) {
             $this->_Token->setHtmlOrigin($html);
         }
         $this->_Token->clean();
@@ -360,10 +362,10 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::MarkupDeclarationOpenState);
                     } else if ($char === '/') {
                         $this->_HTML_ADVANCE_TO(static::EndTagOpenState);
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->beginStartTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_Token->beginStartTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
                     } else if ($char === '?') {
@@ -380,10 +382,10 @@ class HTMLTokenizer {
                     break;
 
                 case static::EndTagOpenState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_Token->beginEndTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_Token->beginEndTag(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
                     } else if ($char === '>') {
@@ -407,7 +409,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
                     } else if ($char === '>') {
                         return $this->_emitAndResumeIn();
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->appendToName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::TagNameState);
                     } else if ($char === static::kEndOfFileMarker) {
@@ -430,11 +432,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::RCDATAEndTagOpenState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
@@ -446,11 +448,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::RCDATAEndTagNameState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::RCDATAEndTagNameState);
@@ -499,11 +501,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::RAWTEXTEndTagOpenState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTEndTagNameState);
@@ -515,11 +517,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::RAWTEXTEndTagNameState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::RAWTEXTEndTagNameState);
@@ -572,11 +574,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::ScriptDataEndTagOpenState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEndTagNameState);
@@ -588,11 +590,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::ScriptDataEndTagNameState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEndTagNameState);
@@ -700,13 +702,13 @@ class HTMLTokenizer {
                     if ($char === '/') {
                         $this->_temporaryBuffer = '';
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedEndTagOpenState);
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer = '';
                         $this->_temporaryBuffer = strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapeStartState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_bufferCharacter('<');
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer = '';
@@ -719,11 +721,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::ScriptDataEscapedEndTagOpenState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedEndTagNameState);
@@ -735,11 +737,11 @@ class HTMLTokenizer {
                     break;
 
                 case static::ScriptDataEscapedEndTagNameState:
-                    if ($this->_isASCIIUpper($char)) {
+                    if (ctype_upper($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedEndTagNameState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_temporaryBuffer .= $char;
                         $this->_bufferedEndTagName .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedEndTagNameState);
@@ -780,11 +782,11 @@ class HTMLTokenizer {
                         } else {
                             $this->_HTML_ADVANCE_TO(static::ScriptDataEscapedState);
                         }
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapeStartState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapeStartState);
@@ -861,11 +863,11 @@ class HTMLTokenizer {
                         } else {
                             $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapedState);
                         }
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer .= strtolower($char);
                         $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapeEndState);
-                    } else if ($this->_isASCIILower($char)) {
+                    } else if (ctype_lower($char)) {
                         $this->_bufferCharacter($char);
                         $this->_temporaryBuffer .= $char;
                         $this->_HTML_ADVANCE_TO(static::ScriptDataDoubleEscapeEndState);
@@ -881,7 +883,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::SelfClosingStartTagState);
                     } else if ($char === '>') {
                         return $this->_emitAndResumeIn();
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->addNewAttribute();
                         $this->_Token->beginAttributeName($source->numberOfCharactersConsumed());
                         $this->_Token->appendToAttributeName(strtolower($char));
@@ -913,7 +915,7 @@ class HTMLTokenizer {
                     } else if ($char === '>') {
                         $this->_Token->endAttributeName($source->numberOfCharactersConsumed());
                         return $this->_emitAndResumeIn();
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->appendToAttributeName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::AttributeNameState);
                     } else if ($char === static::kEndOfFileMarker) {
@@ -938,7 +940,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::BeforeAttributeValueState);
                     } else if ($char === '>') {
                         return $this->_emitAndResumeIn();
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->addNewAttribute();
                         $this->_Token->beginAttributeName($source->numberOfCharactersConsumed());
                         $this->_Token->appendToAttributeName(strtolower($char));
@@ -1265,7 +1267,7 @@ class HTMLTokenizer {
                 case static::BeforeDOCTYPENameState:
                     if ($this->_isTokenizerWhitespace($char)) {
                         $this->_HTML_ADVANCE_TO(static::BeforeDOCTYPENameState);
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->beginDOCTYPE(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::DOCTYPENameState);
                     } else if ($char === '>') {
@@ -1289,7 +1291,7 @@ class HTMLTokenizer {
                         $this->_HTML_ADVANCE_TO(static::AfterDOCTYPENameState);
                     } else if ($char === '>') {
                         return $this->_emitAndResumeIn();
-                    } else if ($this->_isASCIIUpper($char)) {
+                    } else if (ctype_upper($char)) {
                         $this->_Token->appendToName(strtolower($char));
                         $this->_HTML_ADVANCE_TO(static::DOCTYPENameState);
                     } else if ($char === static::kEndOfFileMarker) {
@@ -1636,14 +1638,6 @@ class HTMLTokenizer {
         // logger
     }
 
-    protected function _isASCIIUpper($char) {
-        return preg_match('/\A[A-Z]\Z/', $char);
-    }
-
-    protected function _isASCIILower($char) {
-        return preg_match('/\A[a-z]\Z/', $char);
-    }
-
     protected function _temporaryBufferIs($expectedString) {
         return $this->_vectorEqualsString($this->_temporaryBuffer, $expectedString);
     }
@@ -1690,15 +1684,15 @@ class HTMLTokenizer {
         return true;
     }
 
-    protected function _flushEmitAndResumeIn($source, $state) {
+    protected function _flushEmitAndResumeIn(SegmentedString $source, $state) {
         // m_state = state;
         $this->_state = $state;
         $this->_flushBufferedEndTag($source);
         return true;
     }
 
-    protected function _flushBufferedEndTag($source) {
-        $this->_SegmentedString->advance();
+    protected function _flushBufferedEndTag(SegmentedString $source) {
+        $source->advance();
         if ($this->_Token->getType() === HTMLToken::Character) {
             return true;
         }

@@ -48,7 +48,11 @@ class SegmentedString {
      * @return bool|string
      */
     public function  getCurrentChar() {
-        return substr($this->str, $this->i, 1);
+        $i = $this->i;
+        if ($this->len <= $i) {
+            return false;
+        }
+        return $this->str[$i];
     }
 
     public function advance() {
@@ -78,6 +82,8 @@ class SegmentedString {
 
     /**
      * @param int $offset
+     * @param int $whence
+     * @throws \InvalidArgumentException
      * @return bool
      */
     public function seek($offset, $whence = self::begin) {

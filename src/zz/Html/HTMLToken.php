@@ -235,7 +235,8 @@ class HTMLToken {
     }
 
     public function getTagName() {
-        if ($this->getType() !== static::StartTag && $this->getType() !== static::EndTag) {
+        $type = $this->getType();
+        if ($type !== static::StartTag && $type !== static::EndTag) {
             return false;
         }
         return $this->getName();

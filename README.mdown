@@ -40,7 +40,13 @@ $html = '<div>
         text
     </p> 
 </div>';
+
+// shortcut. retrun minify html
 $minify = HTMLMinify::minify($html);
+
+// detail
+$HTMLMinify = new HTMLMinify($html);
+$minify = $HTMLMinify->process();
 ```
 
 output html

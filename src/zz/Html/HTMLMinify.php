@@ -8,8 +8,6 @@
 namespace zz\Html;
 
 class HTMLMinify {
-    const ENCODING = 'UTF-8';
-
     const DOCTYPE_HTML4 = 'HTML4.01';
     const DOCTYPE_XHTML1 = 'XHTML1.0';
     const DOCTYPE_HTML5 = 'html5';
@@ -226,7 +224,7 @@ class HTMLMinify {
      *
      * 'excludeComment'
      *     example : <!--nocache-->content</--nocache-->
-     *     array()(default)             => content
+     *     array('/<!--\/?nocache-->/')(default)             => content
      *     array('/<!--\/?nocache-->/') => <!--nocache-->content</--nocache-->
      *
      * 'removeDuplicateAttribute'
@@ -389,60 +387,62 @@ class HTMLMinify {
     protected function removeWhitespaceFromComment() {
         $tokens = $this->tokens;
         $regexps = $this->options['excludeComment'];
+        $HTMLTokenStartTag = HTMLToken::StartTag;
+        $HTMLTokenComment = HTMLToken::Comment;
+        $HTMLTokenCharacter = HTMLToken::Character;
+        $HTMLNamesScriptTag = HTMLNames::scriptTag;
+        $HTMLNamesStyleTag = HTMLNames::styleTag;
+        $removes = array();
+        $combineIndex = null;
 
-        for ($i = 0, $len = count($tokens); $i < $len; $i++) {
+        $len = count($tokens);
+        for ($i = 0; $i < $len; $i++) {
             $token = $tokens[$i];
             $type = $token->getType();
-            if ($type === HTMLToken::StartTag) {
+            if ($type === $HTMLTokenStartTag) {
+                $combineIndex = null;
                 $tagName = $token->getTagName();
-                if ($tagName === HTMLNames::scriptTag || $tagName === HTMLNames::styleTag) {
+                if ($tagName === $HTMLNamesScriptTag || $tagName === $HTMLNamesStyleTag) {
                     $i++;
-                    continue;
                 }
-            } else if ($this->_isConditionalComment($token)) {
+                continue;
+            } else if ($type === $HTMLTokenCharacter) {
+                if ($combineIndex > 0) {
+                    $tokens[$combineIndex]->setData($tokens[$combineIndex] . $token);
+                    $removes[] = $i;
+                }
+                continue;
+            } else if ($type !== $HTMLTokenComment) {
+                $combineIndex = null;
                 continue;
             }
-            if ($type !== HTMLToken::Comment) {
+
+            $comment = $token->getData();
+            if ($this->_isConditionalComment($comment)) {
+                $combineIndex = null;
                 continue;
             }
             if ($regexps) {
-                $comment = $token->getData();
                 foreach ($regexps as $regexp) {
                     if (preg_match($regexp, $comment)) {
+                        $combineIndex = null;
                         continue 2;
                     }
                 }
             }
-
-            unset($tokens[$i]);
-            $tokens = array_merge($tokens, array());
-            $len = count($tokens);
-            $i--;
+            $combineIndex = $i - 1;
+            $removes[] = $i;
         }
 
-        /**
-         * @var HTMLToken[] $tokens
-         */
-        $tokens = array_merge($tokens, array());
-
-        // combine chars
-        for ($i = 1, $len = count($tokens); $i < $len; $i++) {
-            $token = $tokens[$i];
-            if ($token->getType() !== HTMLToken::Character) {
-                continue;
-            }
-            $token_before = $tokens[$i - 1];
-            if ($token_before->getType() !== HTMLToken::Character) {
-                continue;
-            }
-            $tokens[$i]->setData($token_before . $token->getData());
-            unset($tokens[$i - 1]);
-            $len = count($tokens);
-            $tokens = array_merge($tokens, array());
-            $i--;
+        foreach ($removes as $remove) {
+            unset($tokens[$remove]);
         }
-        $tokens = array_merge($tokens, array());
+
+        if ($len !== count($tokens)) {
+            $tokens = array_merge($tokens,array());
+        }
         $this->tokens = $tokens;
+        return true;
     }
 
     protected function isInlineTag($tag) {
@@ -470,22 +470,24 @@ class HTMLMinify {
             $token = $tokens[$i];
             $type = $token->getType();
             if ($type === HTMLToken::StartTag) {
-                $isBeforeInline = $this->isInlineTag($token->getTagName());
-                switch ($token->getTagName()) {
+                $tagName = $token->getName();
+                $isBeforeInline = $this->isInlineTag($tagName);
+                switch ($tagName) {
                     case HTMLNames::scriptTag:
                     case HTMLNames::styleTag:
                     case HTMLNames::textareaTag:
                     case HTMLNames::preTag:
                         $isEditable = false;
-                        $uneditableTag = $token->getTagName();
+                        $uneditableTag = $tagName;
                         continue 2;
                         break;
                     default:
                         break;
                 }
             } else if ($type === HTMLToken::EndTag) {
-                $isBeforeInline = $this->isInlineTag($token->getTagName());
-                if (!$isEditable && $token->getTagName() === $uneditableTag) {
+                $tagName = $token->getName();
+                $isBeforeInline = $this->isInlineTag($tagName);
+                if (!$isEditable && $tagName === $uneditableTag) {
                     $uneditableTag = null;
                     $isEditable = true;
                     continue;
@@ -535,12 +537,12 @@ class HTMLMinify {
         $compactCharacters = '';
         $hasWhiteSpace = false;
 
-        for ($i = 0, $len = mb_strlen($characters, static::ENCODING); $i < $len; $i++) {
-            $char = mb_substr($characters, $i, 1, static::ENCODING);
+        for ($i = 0, $len = strlen($characters); $i < $len; $i++) {
+            $char = $characters[$i];
             if ($char === "\x0A") {
                 // remove before whitespace char
                 if ($hasWhiteSpace) {
-                    $compactCharacters = mb_substr($compactCharacters, 0, -1, static::ENCODING);
+                    $compactCharacters = substr($compactCharacters, 0, -1);
                 }
                 $compactCharacters .= $char;
                 $hasWhiteSpace = true;
@@ -567,7 +569,7 @@ class HTMLMinify {
             }
 
             $attributes_old = $token->getAttributes();
-            $attributes_new = array();
+            $attributes_new =array();
             $attributes_name = array();
 
             foreach ($attributes_old as $attribute) {
@@ -586,15 +588,10 @@ class HTMLMinify {
     /**
      * downlevel-hidden : <!--[if expression]> HTML <![endif]-->
      * downlevel-revealed : <![if expression]> HTML <![endif]>
-     * @param HTMLToken $token
+     * @param string $comment
      * @return bool
      */
-    protected function _isConditionalComment(HTMLToken $token) {
-        if ($token->getType() !== HTMLToken::Comment) {
-            return false;
-        }
-
-        $comment = $this->_buildElement($token);
+    protected function _isConditionalComment($comment) {
         $pattern = '/\A<!(?:--)?\[if [^\]]+\]>/s';
         if (preg_match($pattern, $comment)) {
             return true;
