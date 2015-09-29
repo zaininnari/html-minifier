@@ -119,6 +119,7 @@ class HTMLMinify {
         'option' => 'inline',
         'output' => 'inline',
         'p' => 'block',
+        'path' => 'none',
         'param' => 'none',
         'plaintext' => 'block',
         'pre' => 'block',
@@ -175,6 +176,7 @@ class HTMLMinify {
         'link' => 'link',
         'meta' => 'meta',
         'param' => 'param',
+        'path' => 'path',
     );
 
     /**

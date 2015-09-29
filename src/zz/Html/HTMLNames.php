@@ -121,6 +121,7 @@ class HTMLNames {
     const optionTag = 'option';
     const outputTag = 'output';
     const pTag = 'p';
+    const pathTag = 'path';
     const paramTag = 'param';
     const plaintextTag = 'plaintext';
     const preTag = 'pre';

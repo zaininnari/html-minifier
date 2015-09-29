@@ -1,4 +1,5 @@
 <?php
+
 namespace zz\Html;
 use zz\Html;
 
@@ -177,46 +178,48 @@ class HTMLMinifyTest extends \PHPUnit_Framework_TestCase {
         $this->assertEquals($expect, $actual);
     }
 
-    public function testOptimizeByOptionEmptyElement() {
-        $source = '<br><br/><br />';
-        $expect = '<br /><br /><br />';
-        $option = array();
-        $actual = HTMLMinify::minify($source, $option);
-        $this->assertEquals($expect, $actual);
-
-        $source = '<br><br/><br />';
-        $expect = '<br><br><br>';
-        $option = array(
-            'emptyElementAddSlash' => false,
-            'emptyElementAddWhitespaceBeforeSlash' => false,
+    public function optimizeByOptionEmptyElementProvider()
+    {
+        $options = array(
+            'default' => array(),
+            'none' => array(
+                'emptyElementAddSlash' => false,
+                'emptyElementAddWhitespaceBeforeSlash' => false,
+            ),
+            'addWhitespace' => array(
+                'emptyElementAddSlash' => false,
+                'emptyElementAddWhitespaceBeforeSlash' => true,
+            ),
+            'addSlash' => array(
+                'emptyElementAddSlash' => true,
+                'emptyElementAddWhitespaceBeforeSlash' => false,
+            ),
+            'addWhitespaceAndSlash' => array(
+                'emptyElementAddSlash' => true,
+                'emptyElementAddWhitespaceBeforeSlash' => true,
+            )
         );
-        $actual = HTMLMinify::minify($source, $option);
-        $this->assertEquals($expect, $actual);
 
-        $source = '<br><br/><br />';
-        $expect = '<br><br><br>';
-        $option = array(
-            'emptyElementAddSlash' => false,
-            'emptyElementAddWhitespaceBeforeSlash' => true,
-        );
-        $actual = HTMLMinify::minify($source, $option);
-        $this->assertEquals($expect, $actual);
+        $pa = $pathAttribs = 'fill="currentColor" d="M347.3 418.98l4.08-40.8h-40.8v-20.4c0-12.24 4.08-20.4 20.4-20.4h20.4v-36.72h-32.64c-32.64 0-53.04 20.4-53.04 53.04v28.56h-36.72v40.8h36.72v106.08h40.8V423.06h40.8v-4.08z"';
 
-        $source = '<br><br/><br />';
-        $expect = '<br/><br/><br/>';
-        $option = array(
-            'emptyElementAddSlash' => true,
-            'emptyElementAddWhitespaceBeforeSlash' => false,
+        return array(
+            array('<br><br/><br />', '<br /><br /><br />', $options['default']),
+            array('<br><br/><br />', '<br><br><br>', $options['none']),
+            array('<br><br/><br />', '<br><br><br>', $options['addWhitespace']),
+            array('<br><br/><br />', '<br/><br/><br/>', $options['addSlash']),
+            array('<br><br/><br />', '<br /><br /><br />', $options['addWhitespaceAndSlash']),
+            array("<path {$pa}><path {$pa}/><path {$pa} />", "<path {$pa} /><path {$pa} /><path {$pa} />", $options['default']),
+            array("<path {$pa}><path {$pa}/><path {$pa} />", "<path {$pa}><path {$pa}><path {$pa}>", $options['none']),
+            array("<path {$pa}><path {$pa}/><path {$pa} />", "<path {$pa}><path {$pa}><path {$pa}>", $options['addWhitespace']),
+            array("<path {$pa}><path {$pa}/><path {$pa} />", "<path {$pa}/><path {$pa}/><path {$pa}/>", $options['addSlash']),
+            array("<path {$pa}><path {$pa}/><path {$pa} />", "<path {$pa} /><path {$pa} /><path {$pa} />", $options['addWhitespaceAndSlash']),
         );
-        $actual = HTMLMinify::minify($source, $option);
-        $this->assertEquals($expect, $actual);
+    }
 
-        $source = '<br><br/><br />';
-        $expect = '<br /><br /><br />';
-        $option = array(
-            'emptyElementAddSlash' => true,
-            'emptyElementAddWhitespaceBeforeSlash' => true,
-        );
+    /**
+     * @dataProvider  optimizeByOptionEmptyElementProvider
+     */
+    public function testOptimizeByOptionEmptyElement($source, $expect, $option) {
         $actual = HTMLMinify::minify($source, $option);
         $this->assertEquals($expect, $actual);
     }
